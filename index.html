@@ -1,0 +1,905 @@
+<title>網站評估時程</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap">
+<style>
+  /* 版面：白板風的單線要徑圖（藍＝網站主線、紫＝主視覺、紅＝緩衝與落後），下方是可以填的空格表。 */
+  :root {
+    --bg: #f6f7f8;
+    --surface: #ffffff;
+    --ink: #22262d;
+    --ink-soft: #5a606b;
+    --ink-faint: #8b919b;
+    --rule: #d9dce0;
+    --rule-soft: #eceef0;
+    --blue: #2c5aa0;       /* 白板藍筆：網站主線 */
+    --blue-bg: #e6eef9;
+    --violet: #7a4f9a;     /* 主視覺 */
+    --violet-bg: #f1eaf6;
+    --red: #c23b2e;        /* 紅筆：落後、緩衝 */
+    --red-bg: #fbe9e6;
+    --green: #2f7d5b;
+    --band: rgba(120, 128, 140, .12);
+    --band-hol: rgba(194, 59, 46, .10);
+    --font: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #17191c; --surface: #1f2226; --ink: #e7e9ec; --ink-soft: #adb3bd; --ink-faint: #818894;
+    --rule: #383c43; --rule-soft: #2b2e33; --blue: #7fa6e0; --blue-bg: #1f2b3d; --violet: #b996d4; --violet-bg: #2c2335;
+    --red: #ec8576; --red-bg: #3a2320; --green: #7cc3a0; --band: rgba(200, 205, 215, .08); --band-hol: rgba(236, 133, 118, .14);
+    color-scheme: dark;
+  }}
+  :root[data-theme="dark"] {
+    --bg: #17191c; --surface: #1f2226; --ink: #e7e9ec; --ink-soft: #adb3bd; --ink-faint: #818894;
+    --rule: #383c43; --rule-soft: #2b2e33; --blue: #7fa6e0; --blue-bg: #1f2b3d; --violet: #b996d4; --violet-bg: #2c2335;
+    --red: #ec8576; --red-bg: #3a2320; --green: #7cc3a0; --band: rgba(200, 205, 215, .08); --band-hol: rgba(236, 133, 118, .14);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.6; }
+  .wrap { max-width: 80rem; margin: 0 auto; padding-block: 2rem 4rem; padding-inline: 16px; display: flex; flex-direction: column; gap: 1.2rem; }
+  h1 { font-size: 1.45rem; margin: 0; text-wrap: balance; }
+  h2 { font-size: 1.02rem; margin: 0; }
+  h1 .pc { font-size: .9rem; font-weight: 500; color: var(--red); white-space: nowrap; }
+  .sub { margin: .25rem 0 0; color: var(--ink-soft); font-size: .9rem; max-width: 62rem; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .chip { background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; padding: .4rem .75rem; display: flex; flex-direction: column; min-width: 8.5rem; }
+  .chip .k { font-size: .74rem; color: var(--ink-faint); }
+  .chip .v { font-size: 1.05rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .chip.pick { border-color: var(--blue); background: var(--blue-bg); }
+  .chip.pick input[type="date"] { font: inherit; font-size: 1rem; font-weight: 700; color: var(--ink); background: var(--surface); border: 1px solid var(--blue); border-radius: 3px; padding: .05rem .3rem; width: 9.5rem; }
+  .chip .sub2 { font-size: .74rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .chip.bad { border-color: var(--red); background: var(--red-bg); }
+  .chip.bad .v { color: var(--red); }
+  .chip.good .v { color: var(--green); }
+
+  .board { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; }
+  svg { display: block; min-width: 68rem; width: 100%; height: auto; font-family: var(--font); }
+  .legend { display: flex; flex-wrap: wrap; gap: .35rem 1.2rem; font-size: .8rem; color: var(--ink-soft); }
+  .legend span { display: inline-flex; align-items: center; gap: .35rem; }
+  .lg { width: 1.4rem; height: .7rem; border-radius: 2px; display: inline-block; }
+
+  .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
+  .field { display: inline-flex; align-items: center; gap: .4rem; font-size: .86rem; color: var(--ink-soft); }
+  .btn { font: inherit; font-size: .82rem; color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 3px; padding: .25rem .7rem; cursor: pointer; }
+  .hint { font-size: .8rem; color: var(--ink-faint); }
+  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+
+  .tbl { overflow-x: auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; }
+  table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+  th, td { text-align: left; vertical-align: middle; padding: .4rem .6rem; border-bottom: 1px solid var(--rule-soft); }
+  thead th { background: var(--bg); color: var(--ink-soft); font-weight: 500; font-size: .78rem; white-space: nowrap; border-bottom: 1px solid var(--rule); }
+  tr.sec td { background: var(--bg); font-weight: 700; font-size: .82rem; }
+  tr.ms td:nth-child(2) { font-weight: 700; }
+  tr.total td { font-weight: 700; border-top: 1px solid var(--rule); }
+  tr.grp td { font-size: .82rem; color: var(--ink-soft); padding-top: .55rem; }
+  tr.grp td b { color: var(--ink); }
+  tr.sub td.step { padding-left: 1.6rem; position: relative; }
+  tr.sub td.step::before { content: "└"; position: absolute; left: .55rem; color: var(--ink-faint); }
+  .desc { display: block; font-size: .78rem; color: var(--ink-faint); font-weight: 400; margin-top: .1rem; max-width: 30rem; }
+  tr, tr td { transition: background-color .6s; }
+  tr.flash td { background: var(--blue-bg) !important; }
+  @media (prefers-reduced-motion: reduce) { tr, tr td { transition: none; } }
+  [data-go] { cursor: pointer; }
+  svg > g > text { pointer-events: none; }
+  section.flash { background: var(--blue-bg); border-radius: 4px; }
+  svg [data-go]:hover { opacity: .8; }
+  td.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; width: 2rem; color: var(--ink-faint); }
+  td.note { color: var(--ink-faint); font-size: .78rem; min-width: 10rem; max-width: 22rem; }
+  td.note .warn { color: var(--red); font-weight: 500; }
+  td.note .req { color: var(--red); }
+  td.step .red, td.step .desc .red { color: var(--red); }
+  .issues { background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--red); border-radius: 4px; padding: .6rem .85rem .7rem; font-size: .84rem; }
+  .issues h2 { font-size: .95rem; color: var(--red); margin: 0 0 .35rem; }
+  .issues ol { margin: 0; padding-left: 1.2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); column-gap: 2.2rem; row-gap: .6rem; color: var(--ink-soft); }
+  .issues li b { color: var(--ink); font-weight: 700; }
+  .wait.top { flex-direction: row; flex-wrap: wrap; align-items: center; gap: .4rem 1.2rem; margin: 0; padding: .55rem .85rem; font-size: .88rem; border-left: 3px solid var(--violet); }
+  .wait.top b { margin-right: .2rem; }
+  .wait { min-width: 13rem; display: flex; flex-direction: column; gap: .2rem; margin-top: .35rem; padding: .4rem .5rem; background: var(--violet-bg); border-radius: 3px; color: var(--ink); font-size: .8rem; }
+  .wait b { color: var(--violet); }
+  .wait label { display: inline-flex; align-items: center; gap: .3rem; cursor: pointer; }
+  .wait input[type="date"] { width: 8.2rem; }
+  .wait label.pd { display: flex; flex-wrap: wrap; gap: .2rem .4rem; }
+  .wait label.pd span { white-space: nowrap; }
+  .wait .roc { color: var(--ink-soft); }
+  .step { min-width: 15rem; }
+  input[type="number"], input[type="date"], select { font: inherit; font-size: .84rem; color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 3px; padding: .15rem .35rem; }
+  input[type="number"] { width: 4.2rem; text-align: right; font-variant-numeric: tabular-nums; }
+  input[type="date"] { width: 8.6rem; color: var(--ink-faint); }
+  input.set { color: var(--ink); border-color: var(--blue); background: var(--blue-bg); }
+  .cell { display: flex; flex-wrap: wrap; align-items: center; gap: .1rem .3rem; }
+  .cell .roc { flex-basis: 100%; font-size: .78rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+  .x { font: inherit; font-size: .8rem; line-height: 1; border: 1px solid var(--rule); background: var(--surface); color: var(--ink-soft); border-radius: 3px; padding: .1rem .35rem; cursor: pointer; }
+
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 1rem 2rem; }
+  .notes section { min-width: 0; display: flex; flex-direction: column; gap: .4rem; }
+  .notes ul { margin: 0; padding-left: 1.2rem; color: var(--ink-soft); font-size: .88rem; display: flex; flex-direction: column; gap: .3rem; }
+  .notes b { color: var(--ink); font-weight: 500; }
+  .foot { color: var(--ink-faint); font-size: .8rem; margin: 0; }
+  .srcbar { display: flex; flex-wrap: wrap; align-items: center; gap: .45rem .8rem; background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--blue); border-radius: 4px; padding: .5rem .8rem; font-size: .86rem; }
+  .srcbar .src { font-weight: 500; }
+  .srcbar .src.err { color: var(--red); }
+  .srcbar label.btn { display: inline-block; }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .srcbar label.btn:focus-within { outline: 2px solid var(--blue); outline-offset: 2px; }
+  body.drag .wrap { outline: 3px dashed var(--blue); outline-offset: 6px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>網站評估時程 <small class="pc">（請用電腦看）</small></h1>
+    <p class="sub">從需求說明書、招標到 #F Final 版的網站案時程，並對照主視覺案。下方表格的空格都可以改：填「起」或「迄」就把那一步釘在那天，填「天數」就自動往後推；圖和日期會一起更新。</p>
+  </header>
+
+  <div class="srcbar">
+    <span>資料來源：</span><span class="src" id="srcText">內建範例</span>
+    <label class="btn" for="xlsxFile">載入 Excel<input type="file" id="xlsxFile" class="vh" accept=".xlsx,.xls,.ods"></label>
+    <button class="btn" id="exportBtn" type="button">匯出 Excel</button>
+    <button class="btn" id="useBuiltin" type="button">改回內建範例</button>
+    <span class="hint" id="exportMsg" aria-live="polite"></span>
+    <span class="hint">「匯出 Excel」會把畫面上目前的時程（含網頁上改過的天數、日期與設定）存成共用版格式，改完可以再「載入 Excel」。放在 Google 雲端硬碟的話：Google 試算表選「檔案 → 下載 → Microsoft Excel (.xlsx)」再載入；也可以把檔案直接拖進這個頁面。</span>
+  </div>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="wait top" role="group" aria-label="第一階段要不要等主視覺">
+    <b>網站第一階段要不要等主視覺（CIS）完成？</b>
+    <label><input type="radio" name="cisWait" id="w-no" data-g="cisWait" value="no">不需等待，決標後直接開始</label>
+    <label><input type="radio" name="cisWait" id="w-yes" data-g="cisWait" value="yes">需等待：主視覺完成後才進入第一階段</label>
+    <label class="pd"><span>主視覺提供日</span><input type="date" id="g-cisProvide" aria-label="主視覺提供給網站廠商的日期"></label>
+    <span class="roc" id="provRoc"></span>
+    <span class="hint" id="waitHint" style="flex-basis:100%"></span>
+  </div>
+
+  <div class="board"><svg id="chart" viewBox="0 0 1240 545" role="img" aria-label="網站評估時程圖"></svg></div>
+
+  <div class="legend">
+    <span><i class="lg" style="background:var(--blue-bg);border:1.5px solid var(--blue)"></i>網站案主線</span>
+    <span><i class="lg" style="background:var(--violet-bg);border:1.5px solid var(--violet)"></i>主視覺案</span>
+    <span><i class="lg" style="background:var(--band)"></i>年底</span>
+    <span><i class="lg" style="background:var(--band-hol)"></i>春節</span>
+    <span><i class="lg" style="border-top:2px dashed var(--red);height:0"></i>目標上線日</span>
+    <span>△ 里程碑　▲ 評選會　#1＝首發版　#F＝Final 版</span>
+    <span>點圖上的框或標註，會跳到下方表格，看那一段在做什麼。</span>
+  </div>
+
+  <div class="toolbar">
+    <label class="field" for="g-view">顯示範圍
+      <select id="g-view">
+        <option value="all">全程（115/8 – 117/6）</option>
+        <option value="build">放大建置期（115/8 – 116/10）</option>
+      </select>
+    </label>
+    <label class="field" for="g-target">目標上線日 <input type="date" id="g-target" class="set"></label>
+    <label class="field" for="g-cisAward">主視覺決標日 <input type="date" id="g-cisAward" class="set"></label>
+    <label class="field" for="g-cisFinal">CIS 定稿日 <input type="date" id="g-cisFinal" class="set"></label>
+    <button class="btn" id="reset" type="button">還原預設</button>
+    <span class="hint">在網頁上改的數字只存在你自己的瀏覽器，不會寫回 Excel；要讓大家都看到，請改共用的 Excel。</span>
+  </div>
+
+  <aside class="issues" aria-labelledby="issuesTitle">
+    <h2 id="issuesTitle">可能的問題</h2>
+    <ol id="issuesList"></ol>
+  </aside>
+
+  <div class="tbl"><table id="tbl"></table></div>
+
+  <div class="notes">
+    <section id="cis-notes">
+      <h2>第一階段的 3 款網站風格，需要主視覺定稿嗎？</h2>
+      <ul id="cisNote"></ul>
+    </section>
+    <section>
+      <h2>白板上的緩衝（buffer）怎麼留</h2>
+      <ul id="bufNote"></ul>
+    </section>
+  </div>
+  <p class="foot">工作天會跳過週末與國定假日（假日為預估，請以人事行政總處辦公日曆為準）；日曆天的最後一天遇假日順延。</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+/* ============ 預設資料（可在頁面上改） ============ */
+const DEF = { view: "all", target: "2027-05-31", cisAward: "2026-11-02", cisFinal: "2027-03-31", anniv: "2028-06-09", cisWait: "no", cisProvide: "" };
+/* after: 從哪一步完成的次日起算（預設是上一步）；ms: 一天的會議或里程碑 */
+let STEPS = [
+  { sec: "一、需求說明書", key: "prep" },
+  { id: "rfp",   name: "需求說明書撰寫・定稿", short: "需求書", n: 45, unit: "wd", start: "2026-08-03", end: "2026-10-02", note: "定稿日可在上方「需求書定稿」直接選",
+    desc: "撰寫需求說明書與建議書徵求文件，內部開會確認範圍、預算與時程後定稿。" },
+  { id: "visit", name: "訪商（市場訪價、確認做法與價格）", short: "訪商", n: 10, unit: "wd", note: "抓 2 週",
+    desc: "拜訪 2–3 家廠商，確認做法可行、了解市場行情與報價，作為預算與底價的參考。" },
+  { sec: "二、招標（約 3 個月，一評＋二評）", key: "tender" },
+  { id: "t1a", tender: true, sub: true, name: "簽辦採購案", short: "簽辦", n: 5, unit: "wd",
+    desc: "簽請核准採購方式（準用最有利標或公開取得企劃書）、預算來源、評選方式及招標時程。" },
+  { id: "t1b", tender: true, sub: true, name: "擬評選委員名單・成立工作小組", short: "", n: 5, unit: "wd",
+    note: "人數不依金額，法規只訂下限：委員 5 人以上，外聘專家學者不少於 1/3（評選委員會組織準則§4）。開會須過半出席，出席的外聘委員至少 2 人且不少於出席人數 1/3（評選委員會審議規則§9）。本案建議 5 人（院內 2＋外聘 3）或 7 人（院內 3＋外聘 4）；外聘至少 3 人，才不會因 1 人請假而流會。若採公開取得企劃書、參考最有利標精神，可改組 5–17 人評審小組。",
+    desc: "擬定評選委員建議名單（外聘委員至少 1/3，一般由工程會專家學者資料庫遴選）及工作小組，簽請首長圈選。" },
+  { id: "t1c", tender: true, sub: true, name: "委員意願調查・敲定一評日期", short: "", n: 5, unit: "wd",
+    desc: "對圈選的委員做意願調查，確認可出席人數，敲定一評會議日期。" },
+  { id: "t1d", tender: true, sub: true, name: "發聘函・寄送一評會議資料", short: "", n: 7, unit: "wd", note: "委員最好提前 1–2 週收到資料",
+    desc: "發聘函與開會通知，寄送需求說明書、評選項目與配分草案給委員事先審閱。" },
+  { id: "e1", tender: true, name: "一評：審定評選項目與招標文件", short: "一評", n: 1, unit: "wd", ms: true,
+    desc: "評選委員開會，審定評選項目、評審標準、評定方式及招標文件。" },
+  { id: "t2", tender: true, name: "修正招標文件・跨單位會辦", short: "會辦", n: 14, unit: "cd",
+    desc: "依一評會議紀錄修正招標文件，送資服處（資安、雲端）、採購、主計、法制等單位會辦後簽核。" },
+  { id: "t3", tender: true, name: "上網公告・等標期（起＝公告日）", short: "公告", n: 14, unit: "cd", skipFirst: true, note: "法定最少 7 日；設計類要寫建議書，抓 14 日。公告日次日起算",
+    desc: "上傳政府電子採購網公告；廠商領標、提問、撰寫建議書，於截止日前遞送。" },
+  { id: "t4", tender: true, name: "開標・資格審查", short: "開標", n: 2, unit: "wd",
+    desc: "開標，審查廠商資格文件，確認合格廠商。未達 3 家時要第二次公告或改採限制性招標。" },
+  { id: "t5", tender: true, name: "二評前作業（通知簡報、送建議書）", short: "", n: 10, unit: "wd",
+    desc: "工作小組撰寫初審意見；通知廠商簡報時間；把建議書與初審意見送給評選委員。" },
+  { id: "e2", tender: true, name: "二評：廠商簡報・評分", short: "二評", n: 1, unit: "wd", ms: true,
+    desc: "廠商簡報與詢答，委員評分，排出序位。" },
+  { id: "t6", tender: true, name: "簽報結果・議價・決標", short: "議價", n: 15, unit: "wd", award: true,
+    desc: "簽報評選結果、核定底價，與第一序位廠商議價，決標並通知得標廠商。" },
+  { sec: "三、網站履約（每階段驗收抓 30 天）", key: "build" },
+  { id: "s1a", name: "第一階段：啟動會議・成立專案小組・3 款網站風格", short: "", n: 15, unit: "wd", after: "t6", style: true, note: "需求書：決標翌日起 15 工作天",
+    desc: "召開啟動會議、成立專案小組；廠商依主視覺基本設計（Logo、標準色、標準字）提出 3 款網站風格。" },
+  { id: "s1",  name: "第一階段：工作計畫書（含需求訪談）", short: "第一階段", n: 30, unit: "wd", after: "t6", note: "需求書：決標次日起 30 工作天",
+    desc: "廠商做需求訪談，交工作計畫書（含訪談報告與全案製作時程）。" },
+  { id: "a1",  after: "s1,s1a", name: "第一階段驗收", short: "驗收", n: 30, unit: "cd", acc: true,
+    desc: "本院審查第一階段交付文件、提修正意見，驗收合格後付款 15%。" },
+  { id: "s2",  name: "第二階段：初步架構上線測試", short: "第二階段", n: 30, unit: "wd", note: "需求書：驗收後次日起 30 工作天",
+    desc: "完成網站架構與主要功能，在測試區上線讓本院測試。" },
+  { id: "a2",  name: "第二階段驗收", short: "驗收", n: 30, unit: "cd", acc: true,
+    desc: "本院測試、審查第二階段成果，驗收合格後付款 30%。" },
+  { id: "s3",  name: "第三階段：#1 首發版上線", short: "第三階段", n: 40, unit: "wd", launch: true, note: "需求書：驗收後次日起 40 工作天",
+    desc: "套用 CIS 定稿、內容上架、資安弱點掃描與修補、無障礙檢測、教育訓練，正式上線。" },
+  { id: "a3",  name: "第三階段驗收", short: "驗收", n: 30, unit: "cd", acc: true,
+    desc: "驗收正式上線成果與資安、無障礙報告，合格後付款 40%。" },
+  { id: "s4",  name: "第四階段：維運（至 117/12/31）", short: "第四階段・維運", fixedEnd: "2028-12-31",
+    desc: "首發版上線後持續補頁面與內容，#F 前完成 Final 版（全站完整）；活動期間支援，結束後轉成靜態網頁移交本院，結案付款 15%。" },
+];
+
+let HOLIDAYS = [
+  ["2026-09-25", "中秋節"], ["2026-09-28", "教師節"], ["2026-10-09", "國慶日補假"], ["2026-10-26", "光復節補假"], ["2026-12-25", "行憲紀念日"],
+  ["2027-01-01", "元旦"], ["2027-02-04", "除夕前一日"], ["2027-02-05", "除夕"], ["2027-02-08", "春節"], ["2027-02-09", "春節補假"], ["2027-02-10", "春節補假"],
+  ["2027-03-01", "和平紀念日補假"], ["2027-04-05", "清明節"], ["2027-04-06", "兒童節補假"], ["2027-04-30", "勞動節補假"], ["2027-06-09", "端午節"],
+  ["2027-09-15", "中秋節"], ["2027-09-28", "教師節"], ["2027-10-11", "國慶日補假"], ["2027-10-25", "光復節"], ["2027-12-24", "行憲紀念日補假"],
+  ["2027-12-31", "元旦補假"], ["2028-01-24", "除夕前一日"], ["2028-01-25", "除夕"], ["2028-01-26", "春節"], ["2028-01-27", "春節"], ["2028-01-28", "春節"],
+  ["2028-02-28", "和平紀念日"], ["2028-04-03", "兒童節補假"], ["2028-04-04", "清明節"], ["2028-05-01", "勞動節"], ["2028-05-29", "端午節補假"],
+];
+const VIEWS = { all: ["2026-08-01", "2028-07-01"], build: ["2026-08-01", "2027-11-01"] };
+const TODAY = "2026-10-02";
+
+/* ============ 日期工具 ============ */
+let HOL = new Map(HOLIDAYS);
+let XL = null;   /* 載入的 Excel：{ file, at }；null＝內建範例 */
+const BUILTIN = { steps: STEPS, holidays: HOLIDAYS };
+const pad = n => String(n).padStart(2, "0");
+const iso = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+const D = s => { const [y, m, d] = s.split("-").map(Number); return new Date(y, m - 1, d); };
+const add = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+const isWork = d => d.getDay() % 6 !== 0 && !HOL.has(iso(d));
+const nextWork = d => { let x = new Date(d); while (!isWork(x)) x = add(x, 1); return x; };
+const roc = d => (d.getFullYear() - 1911) + "/" + (d.getMonth() + 1) + "/" + d.getDate();
+const rocW = d => roc(d) + "（" + "日一二三四五六"[d.getDay()] + "）";
+const diff = (a, b) => Math.round((b - a) / 86400000);
+/* skipFirst：始日不算入（等標期自公告日次日起算） */
+function run(s, n, unit, skipFirst) {
+  let e;
+  if (unit === "wd") { e = s; let c = 1; while (c < n) { e = add(e, 1); if (isWork(e)) c++; } }
+  else { e = add(s, skipFirst ? n : n - 1); if (!isWork(e)) e = nextWork(e); }
+  return e;
+}
+function count(s, e, unit, skipFirst) {
+  if (unit === "cd") return diff(s, e) + (skipFirst ? 0 : 1);
+  let c = 0; for (let x = new Date(s); x <= e; x = add(x, 1)) if (isWork(x)) c++; return c;
+}
+
+/* ============ 狀態 ============ */
+const KEY = "centennial-web-cp-v1";
+let st = {};
+try { st = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { st = {}; }
+st.g = Object.assign({}, DEF, st.g || {});
+st.s = st.s || {};
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
+const ov = id => st.s[id] || {};
+const N = x => ov(x.id).n != null ? ov(x.id).n : x.n;
+const U = x => ov(x.id).unit || x.unit;
+/* 預設有 start/end 的步驟（需求書），使用者沒動過時套用 */
+const pinS = x => ov(x.id).start !== undefined ? ov(x.id).start : (x.start || null);
+const pinE = x => ov(x.id).end !== undefined ? ov(x.id).end : (x.end || null);
+
+/* ============ 計算 ============ */
+function compute() {
+  const r = {}; let prev = null;
+  r.cisAward = D(st.g.cisAward);
+  r.cisBasic = (() => { const d = new Date(r.cisAward); d.setMonth(d.getMonth() + 2); return d; })();
+  r.cisWait = st.g.cisWait === "yes";
+  r.cisProvide = st.g.cisProvide ? D(st.g.cisProvide) : D(st.g.cisFinal);
+  const awardStep = STEPS.find(z => z.award), awardId = awardStep ? awardStep.id : "t6";
+  STEPS.forEach(x => {
+    if (x.sec) return;
+    const afters = (x.after || "").split(/[,，、\s]+/).filter(id => r[id]);
+    const base = afters.length ? afters.map(id => r[id].e).reduce((a, b) => (a > b ? a : b)) : prev ? r[prev].e : null;
+    let natural = base ? nextWork(add(base, 1)) : null;
+    /* 需等待：第一階段（接在決標之後的步驟：啟動會議・3 款風格、工作計畫書）要等主視覺完成後才開始 */
+    if (r.cisWait && afters.includes(awardId)) { const w = nextWork(add(r.cisProvide, 1)); if (!natural || w > natural) natural = w; }
+    const ps = pinS(x), pe = pinE(x);
+    const s = ps ? D(ps) : natural;
+    let e;
+    if (x.fixedEnd) e = D(x.fixedEnd);
+    else if (pe) e = D(pe);
+    else e = run(nextWork(s), N(x), U(x), x.skipFirst);
+    r[x.id] = { s, e, pinnedS: !!ps, pinnedE: !!pe, overlap: !!ps && natural && D(ps) < natural, n: x.fixedEnd ? null : count(s, e, U(x), x.skipFirst),
+      ids: afters.length ? afters : (prev ? [prev] : []), awaitRow: afters.includes(awardId) };
+    if (XL || !x.style) prev = x.id;   /* 內建範例：平行的 3 款風格不影響主線；Excel：空白＝接上一列（與 Excel 公式相同） */
+  });
+  /* 圖上用到的關鍵步驟：先找固定 ID，找不到再依類型與名稱推定 */
+  const steps = STEPS.filter(x => !x.sec), T = steps.filter(x => x.tender), msT = T.filter(x => x.ms);
+  const pick = (id, f) => r[id] || (f ? r[f.id] : null);
+  r.rfp = pick("rfp", steps[0]);
+  r.t1a = pick("t1a", T[0] || steps[0]);
+  r.t6 = pick("t6", steps.find(x => x.award) || T[T.length - 1] || steps[0]);
+  r.e1 = pick("e1", msT[0]) || r.t6;
+  r.e2 = pick("e2", msT[1]) || r.t6;
+  r.s1a = pick("s1a", steps.find(x => x.style)) || r.t6;
+  r.s2 = pick("s2", steps.find(x => /第二階段/.test(x.name) && !x.acc)) || r.t6;
+  r.s3 = pick("s3", steps.find(x => x.launch) || steps[steps.length - 1]);
+  r.award = r.t6.e;
+  r.launch = r.s3.e;
+  r.target = D(st.g.target);
+  r.gap = diff(r.target, r.launch);       /* 正＝落後天數 */
+  r.cisFinal = D(st.g.cisFinal);
+  r.anniv = D(DEF.anniv);
+  return r;
+}
+
+/* ============ 畫圖（SVG） ============ */
+const NS = "http://www.w3.org/2000/svg";
+const L = 30, R = 1220; let V0, V1;
+const X = d => L + Math.max(0, Math.min(1, diff(V0, d) / diff(V0, V1))) * (R - L);
+function sv(tag, attrs, text) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; }
+const tw = s => [...s].reduce((w, c) => w + (c.charCodeAt(0) > 255 ? 12 : 6.8), 0);
+
+function draw(r) {
+  const svg = document.getElementById("chart"); svg.innerHTML = "";
+  [V0, V1] = (VIEWS[st.g.view] || VIEWS.all).map(D);
+  const Y = 255, YC = 430, AX = 500;
+  const g = (cls) => { const e = sv("g", cls ? { class: cls } : {}); svg.append(e); return e; };
+  const bands = g(), grid = g(), lines = g(), boxes = g(), marks = g(), labels = g();
+
+  /* 月格線與年月刻度 */
+  for (let d = new Date(V0); d <= V1; d.setMonth(d.getMonth() + 1)) {
+    const x = X(d), m = d.getMonth() + 1;
+    grid.append(sv("line", { x1: x, x2: x, y1: 24, y2: AX, stroke: "var(--rule-soft)", "stroke-width": 1 }));
+    grid.append(sv("text", { x: x + 3, y: AX + 16, "font-size": 11, fill: "var(--ink-faint)" }, String(m)));
+    if (m === 1 || iso(d) === iso(V0)) grid.append(sv("text", { x: x + 3, y: AX + 31, "font-size": 11.5, "font-weight": 700, fill: "var(--ink-soft)" }, "民國 " + (d.getFullYear() - 1911)));
+  }
+  grid.append(sv("line", { x1: L, x2: R, y1: AX, y2: AX, stroke: "var(--rule)", "stroke-width": 1 }));
+
+  /* 背景帶：年底、春節 */
+  const band = (a, b, fill, text) => {
+    bands.append(sv("rect", { x: X(D(a)), y: 24, width: X(add(D(b), 1)) - X(D(a)), height: AX - 24, fill }));
+    bands.append(sv("text", { x: X(D(a)) + 3, y: 38, "font-size": 10.5, fill: "var(--ink-soft)" }, text));
+  };
+  band("2026-12-01", "2026-12-31", "var(--band)", "年底");
+  band("2027-02-04", "2027-02-10", "var(--band-hol)", "春節");
+
+  /* 主線（白板那條長箭頭） */
+  lines.append(sv("text", { x: L, y: 66, "font-size": 17, "font-weight": 700, fill: "var(--blue)" }, "網站案"));
+  lines.append(sv("line", { x1: L, x2: R - 4, y1: Y, y2: Y, stroke: "var(--blue)", "stroke-width": 1.6 }));
+  lines.append(sv("path", { d: `M${R - 10} ${Y - 5} L${R} ${Y} L${R - 10} ${Y + 5}`, fill: "none", stroke: "var(--blue)", "stroke-width": 1.6 }));
+
+  /* 拉線標註：每個項目拉一條線到上方，寫「名稱 起–迄」，自動分層避免重疊 */
+  const rng = (s, e) => iso(s) === iso(e) ? roc(s) : roc(s) + "–" + (s.getFullYear() === e.getFullYear() ? (e.getMonth() + 1) + "/" + e.getDate() : roc(e));
+  const makeCallouts = (baseY, gap) => {
+    const placed = [], todo = [];
+    return {
+      add: (cx, anchorY, text, color, weight, go) => todo.push({ cx, anchorY, text, color, weight, go }),
+      draw: () => {
+        todo.sort((a, b) => a.cx - b.cx).forEach(c => {
+          const w = tw(c.text), x0 = Math.min(Math.max(L, c.cx - 6), R - w); let lvl = 0;
+          while (placed.some(a => a.lvl === lvl && !(x0 + w < a.x0 - 8 || x0 > a.x1 + 8))) lvl++;
+          placed.push({ lvl, x0, x1: x0 + w });
+          const ty = baseY - lvl * gap;
+          lines.append(sv("line", { x1: c.cx, x2: c.cx, y1: c.anchorY, y2: ty + 3, stroke: "var(--ink-faint)", "stroke-width": .9 }));
+          lines.append(sv("circle", { cx: c.cx, cy: c.anchorY, r: 2, fill: "var(--ink-faint)" }));
+          const lg = sv("g", c.go ? { "data-go": c.go } : {});
+          lg.append(sv("rect", { x: x0 - 3, y: ty - 12, width: w + 6, height: 16, rx: 2, fill: "var(--surface)" }));
+          lg.append(sv("text", { x: x0, y: ty, "font-size": 11.5, fill: c.color, "font-weight": c.weight || 400 }, c.text));
+          labels.append(lg);
+        });
+      },
+    };
+  };
+  const co = makeCallouts(Y - 34, 19);
+  const below = [];
+  const placeBelow = (x, text, color, y0) => {
+    const w = tw(text), x0 = x - w / 2; let lvl = 0;
+    while (below.some(a => a.lvl === lvl && !(x0 + w < a.x0 - 4 || x0 > a.x1 + 4))) lvl++;
+    below.push({ lvl, x0, x1: x0 + w });
+    labels.append(sv("text", { x: x0, y: y0 + lvl * 15, "font-size": 11, fill: color }, text));
+  };
+
+  { /* 招標整段畫成一個框 */
+    const x0 = X(r.t1a.s), x1 = X(add(r.t6.e, 1)), months = Math.round(diff(r.t1a.s, r.t6.e) / 30.4 * 10) / 10;
+    boxes.append(sv("rect", { x: x0, y: Y - 10, width: x1 - x0, height: 20, rx: 2, fill: "var(--blue-bg)", stroke: "var(--blue)", "stroke-width": 1.2, "data-go": "sec-tender", tabindex: 0, role: "button", "aria-label": "招標：跳到說明" }));
+    const t = "招標 " + months + " 個月";
+    if (tw(t) < x1 - x0 - 6) boxes.append(sv("text", { x: (x0 + x1) / 2, y: Y + 4, "text-anchor": "middle", "font-size": 11, fill: "var(--blue)" }, t));
+    co.add(x0 + 10, Y - 10, "招標（含一評、二評） " + rng(r.t1a.s, r.t6.e), "var(--blue)", 400, "sec-tender");
+  }
+  STEPS.forEach((x, i) => {
+    if (x.sec) return;
+    const q = r[x.id], x0 = X(q.s), x1 = Math.max(X(add(q.e, 1)), x0 + 2);
+    if (q.s >= V1) return;
+    const cx = (x0 + Math.min(x1, R)) / 2;
+    if (x.ms) {
+      marks.append(sv("path", { d: `M${x0} ${Y - 18} L${x0 + 6} ${Y - 10} L${x0 - 6} ${Y - 10} Z`, fill: "var(--blue)" }));
+      co.add(x0, Y - 18, x.short + " " + roc(q.s), "var(--ink)", 700, "row-" + x.id);
+      return;
+    }
+    if (x.tender) return;
+    if (x.style) { /* 3 款風格：主線上方的細條 */
+      boxes.append(sv("rect", { x: x0, y: Y - 17, width: x1 - x0, height: 4, rx: 1, fill: "var(--blue)", opacity: .55 }));
+      co.add(cx, Y - 17, "3款風格 " + rng(q.s, q.e), "var(--blue)", 400, "row-" + x.id);
+      return;
+    }
+    const acc = !!x.acc;
+    boxes.append(sv("rect", { x: x0, y: Y - 10, width: x1 - x0, height: 20, rx: 2, "data-go": "row-" + x.id, tabindex: 0, role: "button", "aria-label": x.name + "：跳到說明",
+      fill: acc ? "var(--surface)" : "var(--blue-bg)", stroke: "var(--blue)", "stroke-width": 1.2, "stroke-dasharray": acc ? "3 2" : "none" }));
+    const lab = x.short || "";
+    if (lab && tw(lab) < x1 - x0 - 6) boxes.append(sv("text", { x: (x0 + x1) / 2, y: Y + 4, "text-anchor": "middle", "font-size": 11, fill: "var(--blue)" }, lab));
+    const nm = acc ? x.name : (x.short || x.name).replace(/（.*?）/g, "");
+    co.add(cx, Y - 10, nm + " " + rng(q.s, q.e), acc ? "var(--ink-soft)" : "var(--blue)", 400, "row-" + x.id);
+  });
+  co.draw();
+
+  /* 下方日期旗標 */
+  const flag = (d, text, color) => {
+    if (d > V1) return;
+    const x = X(d);
+    marks.append(sv("path", { d: `M${x} ${Y + 12} L${x + 6} ${Y + 22} L${x - 6} ${Y + 22} Z`, fill: "none", stroke: color, "stroke-width": 1.4 }));
+    placeBelow(x, text, color, Y + 38);
+  };
+  flag(r.rfp.s, "起 " + roc(r.rfp.s), "var(--blue)");
+  flag(r.rfp.e, "需求書定稿 " + roc(r.rfp.e), "var(--blue)");
+  flag(r.award, "決標 " + roc(r.award), "var(--blue)");
+  flag(r.launch, "#1 首發版上線 " + roc(r.launch), r.gap > 0 ? "var(--red)" : "var(--green)");
+  flag(r.anniv, "#F Final 版 " + roc(r.anniv), "var(--ink)");
+
+  /* 目標上線線與緩衝括號 */
+  const xt = X(r.target), xl = X(r.launch);
+  lines.append(sv("line", { x1: xt, x2: xt, y1: 44, y2: YC + 20, stroke: "var(--red)", "stroke-width": 1.4, "stroke-dasharray": "5 4" }));
+  labels.append(sv("text", { x: xt + 4, y: 54, "font-size": 11.5, fill: "var(--red)", "font-weight": 700 }, "目標上線 " + roc(r.target)));
+  const yb = Y + 88, a = Math.min(xt, xl), b = Math.max(xt, xl);
+  if (Math.abs(r.gap) > 0) {
+    const col = r.gap > 0 ? "var(--red)" : "var(--green)";
+    lines.append(sv("path", { d: `M${a} ${yb - 7} L${a} ${yb} L${b} ${yb} L${b} ${yb - 7}`, fill: "none", stroke: col, "stroke-width": 1.6 }));
+    labels.append(sv("text", { x: (a + b) / 2, y: yb + 15, "text-anchor": "middle", "font-size": 11.5, "font-weight": 700, fill: col },
+      r.gap > 0 ? "落後 " + r.gap + " 天" : "buffer " + (-r.gap) + " 天"));
+  }
+
+  /* 主視覺線 */
+  labels.append(sv("text", { x: L, y: YC - 26, "font-size": 17, "font-weight": 700, fill: "var(--violet)" }, "主視覺案（CIS）"));
+  lines.append(sv("line", { x1: X(r.cisAward), x2: X(add(r.cisFinal, 1)), y1: YC, y2: YC, stroke: "var(--violet)", "stroke-width": 1.4 }));
+  const cco = makeCallouts(YC - 34, 17);
+  const cbox = (s, e, t) => {
+    const x0 = X(s), x1 = X(add(e, 1));
+    boxes.append(sv("rect", { x: x0, y: YC - 10, width: x1 - x0, height: 20, rx: 2, "data-go": "cis-notes", tabindex: 0, role: "button", "aria-label": t + "：跳到說明", fill: "var(--violet-bg)", stroke: "var(--violet)", "stroke-width": 1.2 }));
+    if (tw(t) < x1 - x0 - 6) boxes.append(sv("text", { x: (x0 + x1) / 2, y: YC + 4, "text-anchor": "middle", "font-size": 11, fill: "var(--violet)" }, t));
+    cco.add((x0 + x1) / 2, YC - 10, t + " " + rng(s, e), "var(--violet)", 400, "cis-notes");
+  };
+  cbox(r.cisAward, add(r.cisBasic, -1), "基本設計");
+  cbox(r.cisBasic, r.cisFinal, "應用設計");
+  cco.draw();
+  const cflag = (d, t) => { const x = X(d); marks.append(sv("path", { d: `M${x} ${YC + 12} L${x + 6} ${YC + 22} L${x - 6} ${YC + 22} Z`, fill: "none", stroke: "var(--violet)", "stroke-width": 1.4 })); labels.append(sv("text", { x: x - tw(t) / 2, y: YC + 37, "font-size": 11, fill: "var(--violet)" }, t)); };
+  cflag(r.cisAward, "決標 " + roc(r.cisAward));
+  cflag(r.cisBasic, "Logo・標準色 " + roc(r.cisBasic));
+  cflag(r.cisFinal, "CIS 定稿 " + roc(r.cisFinal));
+  if (r.cisWait && ![r.cisBasic, r.cisFinal, r.cisAward].some(d => Math.abs(diff(d, r.cisProvide)) < 20)) cflag(r.cisProvide, "提供網站 " + roc(r.cisProvide));
+
+  /* 相依箭頭：主視覺 → 網站 */
+  const dep = (fromD, toD, ok, solid) => {
+    const x1 = X(fromD), x2 = X(toD), col = ok ? "var(--violet)" : "var(--red)";
+    lines.append(sv("path", { d: `M${x1} ${YC - 11} C ${x1} ${YC - 60}, ${x2} ${Y + 60}, ${x2} ${Y + 11}`, fill: "none", stroke: col, "stroke-width": solid ? 1.8 : 1.2, "stroke-dasharray": solid ? "none" : "4 3" }));
+    lines.append(sv("path", { d: `M${x2 - 4} ${Y + 19} L${x2} ${Y + 11} L${x2 + 4} ${Y + 19}`, fill: "none", stroke: col, "stroke-width": 1.2 }));
+  };
+  if (r.cisWait) dep(r.cisProvide, r.s1a.s, true, true);
+  else dep(r.cisBasic, r.s1a.s, r.cisBasic <= r.s1a.s);
+  dep(r.cisFinal, r.s2.s, r.cisFinal <= r.s2.s);
+
+  /* 今天 */
+  const xn = X(D(TODAY));
+  lines.append(sv("line", { x1: xn, x2: xn, y1: 24, y2: AX, stroke: "var(--ink-faint)", "stroke-width": 1, "stroke-dasharray": "2 3" }));
+  labels.append(sv("text", { x: xn + 3, y: AX - 6, "font-size": 10.5, fill: "var(--ink-faint)" }, "今天"));
+}
+
+/* ============ 表格 ============ */
+function dateCell(x, kind, q) {
+  const pinned = kind === "start" ? q.pinnedS : q.pinnedE;
+  const d = kind === "start" ? q.s : q.e;
+  const can = !(x.fixedEnd && kind === "end");
+  if (!can) return '<div class="cell"><span class="roc">' + rocW(d) + '</span></div>';
+  return '<div class="cell"><input type="date" id="' + kind + '-' + x.id + '" data-k="' + kind + '" data-id="' + x.id + '" value="' + iso(d) + '"' + (pinned ? ' class="set"' : '') + ' aria-label="' + x.name + (kind === "start" ? " 起" : " 迄") + '">' +
+    (pinned && !(x === STEPS.find(z => !z.sec) && kind === "start") ? '<button type="button" class="x" data-clear="' + kind + '" data-id="' + x.id + '" title="改回自動" aria-label="' + x.name + ' 改回自動">×</button>' : '') +
+    '<span class="roc">' + rocW(d) + (pinned ? "・指定" : "") + '</span></div>';
+}
+/* 3 款網站風格那一列：要特別注意的文字標紅（先比對長句，再比對短詞） */
+const RED_PHRASES = ["廠商依主視覺基本設計（Logo、標準色、標準字）提出 3 款網站風格。", "3 款網站風格"];
+const RED_RE = new RegExp(RED_PHRASES.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "g");
+const markRed = (x, text) => x.style ? text.replace(RED_RE, m => '<span class="red">' + m + '</span>') : text;
+function table(r) {
+  let h = '<thead><tr><th>#</th><th>步驟</th><th>起</th><th>天數</th><th>單位</th><th>迄</th><th>備註</th></tr></thead><tbody>';
+  let i = 0, inSub = null;
+  STEPS.forEach(x => {
+    if (x.sec) { h += '<tr class="sec" id="sec-' + x.key + '" data-sec="' + x.key + '"><td colspan="7">' + x.sec + '</td></tr>'; inSub = null; return; }
+    i++;
+    const q = r[x.id];
+    const lbl = x.sub ? (x.subLabel || "簽辦・成立評選委員會") : null;
+    if (lbl && lbl !== inSub) {
+      const k = STEPS.indexOf(x), subs = [];
+      for (let j = k; j < STEPS.length && STEPS[j].sub && (STEPS[j].subLabel || "簽辦・成立評選委員會") === lbl; j++) subs.push(STEPS[j]);
+      const a = r[subs[0].id].s, b = r[subs[subs.length - 1].id].e;
+      h += '<tr class="grp"><td></td><td colspan="6"><b>' + lbl + '</b>（展開 ' + subs.length + ' 步，共 ' + count(a, b, "wd") + ' 個工作天，' + roc(a) + '–' + roc(b) + '）</td></tr>';
+    }
+    inSub = lbl;
+    const nCell = x.fixedEnd ? '—' : '<input type="number" min="1" max="500" id="n-' + x.id + '" data-k="n" data-id="' + x.id + '" value="' + q.n + '" aria-label="' + x.name + ' 天數">';
+    const uCell = x.fixedEnd ? '' : '<select id="u-' + x.id + '" data-k="unit" data-id="' + x.id + '" aria-label="' + x.name + ' 單位"><option value="wd"' + (U(x) === "wd" ? " selected" : "") + '>工作天</option><option value="cd"' + (U(x) === "cd" ? " selected" : "") + '>日曆天</option></select>';
+    const notes = [];
+    if (q.overlap) notes.push('<span class="warn">起日早於上一步完成，時程重疊</span>');
+    if (x.note) notes.push(/^需求書/.test(x.note) ? '<span class="req">' + x.note + '</span>' : x.note);
+    if ((x.after || "").split(/[,，、\s]+/).includes(STEPS.find(z => z.award)?.id || "t6")) notes.push('<span style="color:var(--violet)">' + (r.cisWait ? '目前：等主視覺完成（' + roc(r.cisProvide) + '）後才開始' : '目前：不等主視覺，決標後直接開始') + '，在圖上方切換</span>');
+    const cls = [x.ms || x.award || x.launch ? "ms" : "", x.sub ? "sub" : ""].join(" ").trim();
+    h += '<tr id="row-' + x.id + '"' + (x.tender ? ' data-in="tender"' : '') + (cls ? ' class="' + cls + '"' : '') + '><td class="n">' + i + '</td><td class="step">' + markRed(x, x.name) + (x.desc ? '<span class="desc">' + markRed(x, x.desc) + '</span>' : '') + '</td><td>' + dateCell(x, "start", q) + '</td><td>' + nCell + '</td><td>' + uCell + '</td><td>' + dateCell(x, "end", q) + '</td><td class="note">' + notes.join("<br>") + '</td></tr>';
+    if (x.award) h += '<tr class="total"><td></td><td>決標日</td><td colspan="4">' + rocW(r.award) + '</td><td class="note">招標約 ' + Math.round(diff(r.t1a.s, r.award) / 30.4 * 10) / 10 + ' 個月</td></tr>';
+    if (x.launch) h += '<tr class="total"><td></td><td>推算上線日</td><td colspan="4">' + rocW(r.launch) + '</td><td class="note">' + (r.gap > 0 ? '<span class="warn">比目標 ' + roc(r.target) + ' 晚 ' + r.gap + ' 天</span>' : '比目標 ' + roc(r.target) + ' 早 ' + (-r.gap) + ' 天') + '</td></tr>';
+  });
+  document.getElementById("tbl").innerHTML = h + '</tbody>';
+}
+
+/* ============ 摘要與說明 ============ */
+function chips(r) {
+  const c = (k, v, cls) => '<div class="chip ' + (cls || "") + '"><span class="k">' + k + '</span><span class="v">' + v + '</span></div>';
+  document.getElementById("chips").innerHTML =
+    (() => { /* 需求書定稿日可以直接選，後面的步驟跟著重算 */
+      const first = STEPS.find(z => !z.sec);
+      return '<div class="chip pick"><label class="k" for="chip-rfp-end">需求書定稿（可選日期）</label>' +
+        '<input type="date" id="chip-rfp-end" data-id="' + first.id + '" data-k="end" value="' + iso(r.rfp.e) + '" aria-label="需求書定稿日">' +
+        '<span class="sub2">' + rocW(r.rfp.e) + '</span></div>';
+    })() + c("一評", roc(r.e1.s)) + c("二評", roc(r.e2.s)) + c("決標", roc(r.award)) +
+    c("#1 首發版上線（推算）", roc(r.launch), r.gap > 0 ? "bad" : "good") +
+    c(r.gap > 0 ? "比目標落後" : "緩衝", Math.abs(r.gap) + " 天", r.gap > 0 ? "bad" : "good") +
+    c("#F Final 版", roc(r.anniv));
+}
+function issues(r) {
+  const mo = (a, b) => Math.round(diff(a, b) / 30.4);
+  const end = r.s4 && r.s4.e ? r.s4.e : D("2028-12-31");
+  const cut = (STEPS.find(z => !z.sec && z.id === "s4") ? r.s4 : null) || { s: r.launch };
+  document.getElementById("issuesList").innerHTML = [
+    '<b>主視覺案只做到 ' + roc(r.cisFinal) + '，之後還需要主視覺廠商設計嗎？</b>主視覺案在 ' + roc(r.cisFinal) + ' 結案（CIS 手冊、標準 Banner）。之後到 #F Final 版（' + roc(r.anniv) + '）新增的頁面、主題 Banner、活動當週的視覺，要由誰設計？主視覺廠商屆時已經結案。',
+    '<b>第三階段之後，還會改版或新增呈現方式嗎？</b>設計工作只寫到第三階段（#1 首發版，推算 ' + roc(r.launch) + '）。之後到 #F Final 版約 ' + mo(r.launch, r.anniv) + ' 個月、到契約結束（' + roc(end) + '）約 ' + mo(r.launch, end) + ' 個月。這段期間若要調整版型、或分批上架的內容需要新的互動呈現，第四階段目前只寫「維運」，廠商可能認為不在契約範圍內。',
+    '<b>第四階段只付 15%，夠嗎？</b>這 15% 要支應約 ' + mo(cut.s, end) + ' 個月的維運、雲端費用，加上前兩點的設計工作。',
+  ].map(t => "<li>" + t + "</li>").join("");
+}
+function notes(r) {
+  const okBasic = r.cisBasic <= r.s1a.s, okFinal = r.cisFinal <= r.s2.s;
+  r.a1 = r.a1 || r.s1a;
+  document.getElementById("cisNote").innerHTML = [
+    '<b>不需要定稿，但需要「基本設計」。</b>網站第一階段的 3 款風格是版面與調性提案（版型、色調、字級、動態感），需要的是主視覺已經選定的 Logo、標準色、標準字，不是完整的 CIS 手冊。',
+    r.cisWait
+      ? '目前設定<b>需等待主視覺完成</b>：主視覺 ' + roc(r.cisProvide) + ' 完成後，整個第一階段（啟動會議、3 款風格、工作計畫書）<b>' + roc(r.s1a.s) + ' 才開始</b>，決標到第一階段之間空等約 ' + Math.max(0, diff(r.award, r.s1a.s)) + ' 天。需求書的第一階段期限要改成「自本院提供主視覺次日起」計算。'
+      : '目前設定<b>不需等待</b>：網站第一階段 <b>' + roc(r.s1a.s) + ' 開始</b>，主視覺基本設計約 <b>' + roc(r.cisBasic) + '</b> 完成（決標後 2 個月）' + (okBasic ? '，<b>時間接得上</b>。' : '，<b style="color:var(--red)">比網站第一階段晚</b>，3 款風格只能先用暫定色調，或改成「需等待」。'),
+    'CIS 定稿 ' + roc(r.cisFinal) + '，網站第二階段 ' + roc(r.s2.s) + ' 開始' + (okFinal ? '，第二階段可以直接套用定稿。' : '，<b style="color:var(--red)">第二階段開始時還沒定稿</b>。'),
+    '建議需求書把「3 款主視覺設計」改寫成「依本院百年視覺識別（另案）基本設計，提出 3 款網站版面風格」，並加一句「本院 CIS 定稿後，廠商應無償套用調整」。',
+  ].map(t => "<li>" + t + "</li>").join("");
+  const late = r.gap > 0;
+  document.getElementById("bufNote").innerHTML = [
+    late ? '<b>目前沒有 buffer，反而落後 ' + r.gap + ' 天。</b>主因是每階段驗收各抓 30 天，三次加起來約 3 個月都在要徑上。' : '<b>目前有 ' + (-r.gap) + ' 天 buffer。</b>',
+    '<b>縮時間</b>：驗收改抓 10–15 個工作天；或需求書改成「第二階段自決標日起 X 工作天」，不必等前一階段驗收完才起算；招標提前，避開年底。',
+    '<b>縮範圍</b>：116/5 先上線首頁＋倒數＋部分內容，其餘頁面放到第四階段陸續上線。',
+    '<b>延後目標</b>：把正式上線改到推算日，離 #F Final 版仍有約 ' + Math.round(diff(r.launch, r.anniv) / 30.4) + ' 個月。',
+  ].map(t => "<li>" + t + "</li>").join("");
+}
+
+/* ============ 整體 ============ */
+function render() {
+  const r = compute();
+  ["view", "target", "cisAward", "cisFinal"].forEach(k => { document.getElementById("g-" + k).value = st.g[k]; });
+  document.getElementById("w-no").checked = !r.cisWait;
+  document.getElementById("w-yes").checked = r.cisWait;
+  const pv = document.getElementById("g-cisProvide");
+  pv.value = iso(r.cisProvide); pv.disabled = !r.cisWait;
+  document.getElementById("provRoc").textContent = rocW(r.cisProvide) + (st.g.cisProvide ? "・指定" : "・預設＝CIS 定稿日");
+  document.getElementById("waitHint").textContent = r.cisWait
+    ? "決標 " + roc(r.award) + " 後，要等到 " + roc(r.cisProvide) + " 主視覺完成才進入第一階段（空等約 " + Math.max(0, diff(r.award, r.s1a.s)) + " 天）。需求書第一階段期限要改寫成「自本院提供主視覺次日起 15／30 工作天」。"
+    : "決標後就進入第一階段；3 款風格用主視覺當時已有的基本設計（Logo、標準色）提案，CIS 定稿後再套用。";
+  draw(r); table(r); chips(r); notes(r); issues(r);
+}
+const refocus = id => { const n = document.getElementById(id); if (n) n.focus({ preventScroll: true }); };
+document.addEventListener("change", e => {
+  const t = e.target;
+  if (t.dataset.g) { st.g[t.dataset.g] = t.value; }
+  else if (t.id && t.id.startsWith("g-")) { if (!t.value) return; st.g[t.id.slice(2)] = t.value; }
+  else if (t.dataset.id) {
+    const id = t.dataset.id, o = st.s[id] = Object.assign({}, st.s[id]);
+    if (t.dataset.k === "n") { o.n = Math.max(1, Math.min(500, parseInt(t.value, 10) || 1)); o.end = null; }
+    else if (t.dataset.k === "unit") { o.unit = t.value; }
+    else if (t.dataset.k === "start") { if (!t.value) return; o.start = t.value; }
+    else if (t.dataset.k === "end") { if (!t.value) return; o.end = t.value; }
+  } else return;
+  save(); render(); refocus(t.id);
+});
+/* 點圖上的框或標註：捲到表格對應的列，並短暫標亮 */
+function goTo(id) {
+  const el = document.getElementById(id); if (!el) return;
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: id.startsWith("sec-") ? "start" : "center" });
+  const rows = id === "sec-tender" ? [el, ...document.querySelectorAll('tr[data-in="tender"]'), ...document.querySelectorAll("tr.grp")] : [el];
+  rows.forEach(r => r.classList.add("flash"));
+  setTimeout(() => rows.forEach(r => r.classList.remove("flash")), 1800);
+}
+document.getElementById("chart").addEventListener("click", e => { const g = e.target.closest("[data-go]"); if (g) goTo(g.dataset.go); });
+document.getElementById("chart").addEventListener("keydown", e => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const g = e.target.closest("[data-go]"); if (g) { e.preventDefault(); goTo(g.dataset.go); }
+});
+document.addEventListener("click", e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.clear) { const o = st.s[t.dataset.id] = Object.assign({}, st.s[t.dataset.id]); o[t.dataset.clear] = null; save(); render(); }
+  else if (t.id === "reset") { st = { g: Object.assign({}, DEF, XL ? XL.settings : {}), s: {} }; save(); render(); }
+  else if (t.id === "useBuiltin") { useBuiltin(); }
+  else if (t.id === "exportBtn") { exportXlsx(); }
+});
+/* ============ 載入 Excel（SheetJS） ============ */
+const XKEY = "centennial-web-cp-xlsx";
+function toIsoDate(v) {
+  if (v === "" || v == null) return null;
+  if (typeof v === "number") return iso(new Date(1899, 11, 30 + Math.round(v)));
+  if (v instanceof Date) return iso(v);
+  const m = String(v).trim().match(/^(\d{2,4})[\/\-.年](\d{1,2})[\/\-.月](\d{1,2})/);
+  if (!m) return null;
+  let y = +m[1]; if (y < 1911) y += 1911;
+  return y + "-" + pad(+m[2]) + "-" + pad(+m[3]);
+}
+const txt = v => String(v == null ? "" : v).trim();
+function parseWorkbook(wb) {
+  const sh = wb.Sheets["步驟"];
+  if (!sh) throw new Error("檔案裡找不到「步驟」工作表。請用共用版範本。");
+  const rows = XLSX.utils.sheet_to_json(sh, { header: 1, raw: true, defval: "" });
+  const hdr = (rows[0] || []).map(txt), col = n => hdr.indexOf(n);
+  const c = { id: col("ID"), stage: col("階段"), sub: col("子項目"), name: col("步驟名稱"), short: col("圖上簡稱"), type: col("類型"),
+    n: col("天數"), unit: col("單位"), after: col("接在哪一步之後"), skip: col("始日不算入"), ps: col("指定起日"), pe: col("指定迄日"),
+    desc: col("在做什麼"), note: col("備註") };
+  if (c.name < 0 || c.n < 0) throw new Error("「步驟」工作表缺少「步驟名稱」或「天數」欄。");
+  const get = (row, k) => c[k] < 0 ? "" : row[c[k]];
+  const steps = []; let lastStage = null, secN = 0;
+  rows.slice(1).forEach((row, i) => {
+    const name = txt(get(row, "name")); if (!name) return;
+    const stage = txt(get(row, "stage")) || lastStage || "（未分階段）";
+    if (stage !== lastStage) { steps.push({ sec: stage, key: /招標/.test(stage) ? "tender" : "s" + (secN++) }); lastStage = stage; }
+    const typ = txt(get(row, "type")) || "一般", subLabel = txt(get(row, "sub"));
+    steps.push({
+      id: txt(get(row, "id")) || "row" + (i + 2), name, short: txt(get(row, "short")),
+      n: Math.max(1, parseInt(get(row, "n"), 10) || 1), unit: /日曆/.test(txt(get(row, "unit"))) ? "cd" : "wd",
+      after: txt(get(row, "after")) || null, skipFirst: txt(get(row, "skip")) === "是",
+      start: toIsoDate(get(row, "ps")), end: toIsoDate(get(row, "pe")),
+      desc: txt(get(row, "desc")), note: txt(get(row, "note")),
+      tender: /招標/.test(stage), sub: !!subLabel, subLabel,
+      ms: typ === "里程碑", acc: typ === "驗收", style: typ === "平行",
+    });
+  });
+  const real = steps.filter(x => !x.sec);
+  if (!real.length) throw new Error("「步驟」工作表沒有任何步驟。");
+  if (!real[0].start) throw new Error("第一個步驟要填「指定起日」，其他日期才算得出來。");
+  const T = real.filter(x => x.tender);
+  (real.find(x => x.id === "t6") || T[T.length - 1] || {}).award = true;
+  (real.find(x => x.id === "s3") || real.find(x => /首發/.test(x.name)) || real[real.length - 1]).launch = true;
+  const holidays = [];
+  if (wb.Sheets["假日"]) XLSX.utils.sheet_to_json(wb.Sheets["假日"], { header: 1, raw: true, defval: "" }).slice(1).forEach(row => {
+    const d = toIsoDate(row[0]); if (d) holidays.push([d, txt(row[1]) || "假日"]);
+  });
+  const settings = {};
+  if (wb.Sheets["設定"]) XLSX.utils.sheet_to_json(wb.Sheets["設定"], { header: 1, raw: true, defval: "" }).slice(1).forEach(row => {
+    const k = txt(row[0]).replace(/\s/g, ""), v = toIsoDate(row[1]);
+    if (k === "3款風格是否等待主視覺") { settings.cisWait = /需等待/.test(txt(row[1])) ? "yes" : "no"; return; }
+    if (!v) return;
+    if (k === "目標上線日") settings.target = v;
+    else if (k === "主視覺決標日") settings.cisAward = v;
+    else if (k === "CIS定稿日") settings.cisFinal = v;
+    else if (k === "Final版日期" || k === "院慶日") settings.anniv = v;
+    else if (k === "主視覺提供日") settings.cisProvide = v;
+  });
+  if (settings.cisProvide && settings.cisProvide === settings.cisFinal) delete settings.cisProvide;   /* 提供日＝預設（CIS 定稿日） */
+  return { steps, holidays, settings };
+}
+function applyData(data, meta) {
+  STEPS = data.steps;
+  HOLIDAYS = data.holidays.length ? data.holidays : BUILTIN.holidays;
+  HOL = new Map(HOLIDAYS);
+  XL = Object.assign({ settings: data.settings }, meta);
+  if (data.settings.anniv) DEF.anniv = data.settings.anniv;
+}
+function showSource(err) {
+  const el = document.getElementById("srcText");
+  el.className = "src" + (err ? " err" : "");
+  el.textContent = err ? err : XL ? XL.file + "（" + XL.at + " 載入，" + STEPS.filter(x => !x.sec).length + " 個步驟）" : "內建範例";
+}
+function loadFile(file) {
+  if (!file) return;
+  if (typeof XLSX === "undefined") { showSource("讀取 Excel 的元件沒有載入，請確認網路連線後重新整理。"); return; }
+  const fr = new FileReader();
+  fr.onload = () => {
+    try {
+      const data = parseWorkbook(XLSX.read(new Uint8Array(fr.result), { type: "array" }));
+      const now = new Date(), at = roc(now) + " " + pad(now.getHours()) + ":" + pad(now.getMinutes());
+      applyData(data, { file: file.name, at });
+      st.s = {}; st.g = Object.assign({}, st.g, { cisWait: "no", cisProvide: "" }, data.settings);
+      save();
+      try { localStorage.setItem(XKEY, JSON.stringify({ data, meta: { file: file.name, at } })); } catch (e) {}
+      render(); showSource();
+    } catch (e) { showSource("無法載入：" + (e.message || e)); }
+  };
+  fr.readAsArrayBuffer(file);
+}
+function useBuiltin() {
+  STEPS = BUILTIN.steps; HOLIDAYS = BUILTIN.holidays; HOL = new Map(HOLIDAYS); XL = null; DEF.anniv = "2028-06-09";
+  try { localStorage.removeItem(XKEY); } catch (e) {}
+  st.s = {}; save(); render(); showSource();
+}
+document.getElementById("xlsxFile").addEventListener("change", e => { loadFile(e.target.files[0]); e.target.value = ""; });
+document.addEventListener("dragover", e => { e.preventDefault(); document.body.classList.add("drag"); });
+document.addEventListener("dragleave", e => { if (!e.relatedTarget) document.body.classList.remove("drag"); });
+document.addEventListener("drop", e => { e.preventDefault(); document.body.classList.remove("drag"); loadFile(e.dataTransfer.files[0]); });
+try { const saved = JSON.parse(localStorage.getItem(XKEY) || "null"); if (saved && saved.data) applyData(saved.data, saved.meta); } catch (e) {}
+
+/* ============ 匯出 Excel（ExcelJS；格式與共用版範本相同，改完可以再載入） ============ */
+function loadScript(src) {
+  return new Promise((ok, no) => { const sc = document.createElement("script"); sc.src = src; sc.onload = ok; sc.onerror = () => no(new Error("無法載入匯出元件，請確認網路連線。")); document.head.append(sc); });
+}
+const serial = d => diff(new Date(1899, 11, 30), d);
+const stageOf = x => { let sname = ""; for (const z of STEPS) { if (z.sec) sname = z.sec; if (z === x) return sname; } return sname; };
+const HELP = [
+  ["網站評估時程（共用版）", true], ["", false],
+  ["怎麼改", true],
+  ["1. 只改淡黃色的格子；灰色是公式，會自動算，不要改。", false],
+  ["2. 天數＋單位（工作天／日曆天）決定每一步多長；工作天會跳過週末與「假日」工作表的日期。", false],
+  ["3. 「接在哪一步之後」填前一步的 ID；空白代表接在上一列之後。", false],
+  ["4. 要把某一步釘在固定日期，就填「指定起日」或「指定迄日」；後面的步驟會自動接著算。", false],
+  ["5. 新增步驟：在表格下方的空白列填 ID（不要重複）、階段、步驟名稱、天數、單位即可。", false],
+  ["6. 「始日不算入」填「是」：用在等標期，從公告日次日起算。", false],
+  ["7. 「類型」：一般／里程碑（一天的會議）／驗收（虛線框）／平行（不影響主線，例如 3 款風格）。", false],
+  ["8. 第一階段要不要等主視覺完成：到「設定」工作表選「需等待／不需等待」，並填「主視覺提供日」。", false],
+  ["", false],
+  ["請不要改的 ID", true],
+  ["rfp（第一步）、t6（決標）、s1a（3 款風格）、s2（第二階段）、s3（首發版上線）：網頁靠這幾個 ID 畫決標、上線與主視覺的銜接。", false],
+  ["", false],
+  ["怎麼看圖", true],
+  ["在「網站評估時程」網頁按「載入 Excel」選這個檔案。放在 Google 雲端硬碟時：Google 試算表選「檔案 → 下載 → Microsoft Excel (.xlsx)」再載入。", false],
+];
+async function buildXlsx() {
+  if (typeof ExcelJS === "undefined") await loadScript("https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js");
+  const r = compute();
+  const wb = new ExcelJS.Workbook();
+  const BLUE = "FF2C5AA0", EDIT = "FFFFF8DC", AUTO = "FFEEF1F5";
+  const font = { name: "Microsoft JhengHei", size: 10 }, hfont = { name: "Microsoft JhengHei", bold: true, color: { argb: "FFFFFFFF" } };
+  const thin = { style: "thin", color: { argb: "FFD9DCE0" } }, border = { top: thin, left: thin, bottom: thin, right: thin };
+  const head = (ws, cols) => {
+    ws.columns = cols.map(([h, w]) => ({ header: h, width: w }));
+    ws.getRow(1).eachCell(c => { c.font = hfont; c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: BLUE } }; c.alignment = { horizontal: "center", vertical: "middle", wrapText: true }; c.border = border; });
+    ws.getRow(1).height = 30;
+  };
+  const paint = (c, editable, fmt) => { c.font = font; c.border = border; c.alignment = { wrapText: true, vertical: "top" }; c.fill = { type: "pattern", pattern: "solid", fgColor: { argb: editable ? EDIT : AUTO } }; if (fmt) c.numFmt = fmt; };
+  const HOLR = "假日!$A$2:$A$300", NR = "$N$2:$N$300", AR = "$A$2:$A$300";
+  const rocF = c => `IF(${c}="","",(YEAR(${c})-1911)&"/"&MONTH(${c})&"/"&DAY(${c})&"（"&MID("日一二三四五六",WEEKDAY(${c}),1)&"）")`;
+  const look = id => `INDEX(${NR},MATCH("${id}",${AR},0))`;
+  const endF = R => { const e0 = `(M${R}+G${R}-IF(J${R}="是",0,1))`; return `IF(L${R}<>"",L${R},IF(H${R}="日曆天",IF(AND(WEEKDAY(${e0},2)<6,COUNTIF(${HOLR},${e0})=0),${e0},WORKDAY(${e0},1,${HOLR})),WORKDAY(M${R}-1,MAX(1,G${R}),${HOLR})))`; };
+
+  /* 使用說明 */
+  const wi = wb.addWorksheet("使用說明");
+  wi.getColumn(1).width = 110;
+  HELP.forEach(([t, b], i) => { const c = wi.getCell(i + 1, 1); c.value = t || null; c.font = { name: "Microsoft JhengHei", bold: b, size: i === 0 ? 14 : 11 }; c.alignment = { wrapText: true, vertical: "top" }; });
+  const now = new Date();
+  wi.getCell(HELP.length + 2, 1).value = "本檔由網頁匯出：" + roc(now) + " " + pad(now.getHours()) + ":" + pad(now.getMinutes());
+
+  /* 步驟 */
+  const ws = wb.addWorksheet("步驟", { views: [{ state: "frozen", xSplit: 4, ySplit: 1 }] });
+  head(ws, [["ID", 7], ["階段", 22], ["子項目", 18], ["步驟名稱", 34], ["圖上簡稱", 12], ["類型", 8], ["天數", 7], ["單位", 8], ["接在哪一步之後", 12], ["始日不算入", 9],
+    ["指定起日", 12], ["指定迄日", 12], ["起日（自動）", 12], ["迄日（自動）", 12], ["起（民國）", 15], ["迄（民國）", 15], ["在做什麼", 48], ["備註", 48]]);
+  const steps = STEPS.filter(x => !x.sec);
+  steps.forEach((x, i) => {
+    const R = i + 2, q = r[x.id], ids = q.ids || [];
+    const typ = x.ms ? "里程碑" : x.acc ? "驗收" : x.style ? "平行" : "一般";
+    const ps = i === 0 ? iso(q.s) : pinS(x), pe = x.fixedEnd || pinE(x);
+    const row = ws.getRow(R);
+    [x.id, stageOf(x), x.sub ? (x.subLabel || "簽辦・成立評選委員會") : "", x.name, x.short || "", typ,
+     x.fixedEnd ? "" : N(x), U(x) === "cd" ? "日曆天" : "工作天", ids.join(","), x.skipFirst ? "是" : "",
+     ps ? serial(D(ps)) : "", pe ? serial(D(pe)) : ""].forEach((v, j) => { row.getCell(j + 1).value = v === "" ? null : v; });
+    let mF;
+    if (i === 0) mF = `K${R}`;
+    else {
+      const prevE = ids.length > 1 ? `MAX(${ids.map(look).join(",")})` : `IF(I${R}="",N${R - 1},INDEX(${NR},MATCH(I${R},${AR},0)))`;
+      let nat = `WORKDAY(${prevE},1,${HOLR})`;
+      if (q.awaitRow) nat = `MAX(${nat},IF(設定!$B$10="需等待",WORKDAY(設定!$B$11,1,${HOLR}),0))`;
+      mF = `IF(K${R}<>"",K${R},${nat})`;
+    }
+    row.getCell(13).value = { formula: mF, result: serial(q.s) };
+    row.getCell(14).value = { formula: endF(R), result: serial(q.e) };
+    row.getCell(15).value = { formula: rocF("M" + R), result: rocW(q.s) };
+    row.getCell(16).value = { formula: rocF("N" + R), result: rocW(q.e) };
+    row.getCell(17).value = x.desc || null;
+    row.getCell(18).value = x.note || null;
+    for (let c = 1; c <= 18; c++) paint(row.getCell(c), !(c >= 13 && c <= 16), c >= 11 && c <= 14 ? "yyyy/mm/dd" : null);
+  });
+  const last = steps.length + 1;
+  for (let k = 1; k <= 20; k++) {   /* 預留空白列，帶好公式 */
+    const R = last + k, row = ws.getRow(R);
+    const prevE = `IF(I${R}="",N${R - 1},INDEX(${NR},MATCH(I${R},${AR},0)))`;
+    row.getCell(13).value = { formula: `IF(D${R}="","",IF(K${R}<>"",K${R},WORKDAY(${prevE},1,${HOLR})))` };
+    row.getCell(14).value = { formula: `IF(D${R}="","",${endF(R)})` };
+    row.getCell(15).value = { formula: rocF("M" + R) };
+    row.getCell(16).value = { formula: rocF("N" + R) };
+    for (let c = 1; c <= 18; c++) paint(row.getCell(c), !(c >= 13 && c <= 16), c >= 11 && c <= 14 ? "yyyy/mm/dd" : null);
+  }
+  const end = last + 20;
+  ws.dataValidations.add(`F2:F${end}`, { type: "list", allowBlank: true, formulae: ['"一般,里程碑,驗收,平行"'] });
+  ws.dataValidations.add(`H2:H${end}`, { type: "list", allowBlank: true, formulae: ['"工作天,日曆天"'] });
+  ws.dataValidations.add(`J2:J${end}`, { type: "list", allowBlank: true, formulae: ['"是"'] });
+  ws.autoFilter = "A1:R" + last;
+
+  /* 假日 */
+  const wh = wb.addWorksheet("假日");
+  head(wh, [["日期", 13], ["名稱", 18]]);
+  HOLIDAYS.forEach(([d, n], i) => { const row = wh.getRow(i + 2); row.getCell(1).value = serial(D(d)); row.getCell(2).value = n; paint(row.getCell(1), true, "yyyy/mm/dd"); paint(row.getCell(2), true); });
+  wh.getCell("D1").value = "說明"; wh.getCell("D1").font = { name: "Microsoft JhengHei", bold: true };
+  wh.getCell("D2").value = "國定假日與補假（預估，請以人事行政總處公布的辦公日曆為準）。直接往下新增即可，步驟表的日期會自動重算。";
+  wh.getColumn(4).width = 70;
+
+  /* 設定（列的順序固定：B10、B11 被步驟表公式引用） */
+  const wt = wb.addWorksheet("設定");
+  head(wt, [["項目", 24], ["值", 14], ["說明", 60]]);
+  const launchId = (steps.find(x => x.launch) || {}).id || "s3", awardId = (steps.find(x => x.award) || {}).id || "t6";
+  const SET = [
+    ["目標上線日", serial(r.target), "#1 首發版的目標上線日", true],
+    ["主視覺決標日", serial(r.cisAward), "主視覺（CIS）案決標日", true],
+    ["CIS 定稿日", serial(r.cisFinal), "主視覺案履約期限", true],
+    ["Final 版日期", serial(r.anniv), "#F Final 版（全站完整）的日期", true],
+    ["主視覺基本設計完成", { formula: "EDATE(B3,2)", result: serial(r.cisBasic) }, "主視覺決標後 2 個月（自動）", false],
+    ["推算上線日", { formula: `INDEX(步驟!$N$2:$N$300,MATCH("${launchId}",步驟!$A$2:$A$300,0))`, result: serial(r.launch) }, "第三階段完成日（自動）", false],
+    ["比目標晚幾天", { formula: "B7-B2", result: r.gap }, "正數＝落後，負數＝有緩衝（自動）", false],
+    ["決標日", { formula: `INDEX(步驟!$N$2:$N$300,MATCH("${awardId}",步驟!$A$2:$A$300,0))`, result: serial(r.award) }, "（自動）", false],
+    ["3款風格是否等待主視覺", r.cisWait ? "需等待" : "不需等待", "選「需等待」：整個第一階段（啟動會議、3 款風格、工作計畫書）要等主視覺完成後才開始", true],
+    ["主視覺提供日", st.g.cisProvide ? serial(D(st.g.cisProvide)) : { formula: "B4", result: serial(r.cisFinal) }, "主視覺完成、提供給網站廠商的日期；預設＝CIS 定稿日（B4）", true],
+  ];
+  SET.forEach(([k, v, note, ed], i) => {
+    const row = wt.getRow(i + 2);
+    row.getCell(1).value = k; row.getCell(2).value = v; row.getCell(3).value = note;
+    paint(row.getCell(1), false); paint(row.getCell(2), ed, (i === 6 || i === 8) ? null : "yyyy/mm/dd"); paint(row.getCell(3), false);
+  });
+  wt.dataValidations.add("B10", { type: "list", allowBlank: false, formulae: ['"不需等待,需等待"'] });
+
+  wb.views = [{ activeTab: 1 }];
+  return wb.xlsx.writeBuffer();
+}
+async function deliver(buf, filename) {
+  const msg = document.getElementById("exportMsg");
+  const blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  let dl = null;
+  try { if (window.claude && window.claude.use) dl = await window.claude.use("downloads"); } catch (e) {}
+  if (dl) {
+    try { await dl.save({ filename, data: blob }); msg.textContent = "已匯出：" + filename; }
+    catch (e) { msg.textContent = e && e.code === "declined" ? "已取消匯出。" : "這裡無法下載檔案（" + ((e && e.code) || e) + "）。"; }
+    return;
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  msg.textContent = "已匯出：" + filename;
+}
+async function exportXlsx() {
+  const msg = document.getElementById("exportMsg");
+  msg.textContent = "匯出中…";
+  try {
+    const now = new Date();
+    const name = "網站評估時程_" + (now.getFullYear() - 1911) + pad(now.getMonth() + 1) + pad(now.getDate()) + "_" + pad(now.getHours()) + pad(now.getMinutes()) + ".xlsx";
+    await deliver(await buildXlsx(), name);
+  } catch (e) { msg.textContent = "匯出失敗：" + (e.message || e); }
+}
+
+render();
+showSource();
+</script>
