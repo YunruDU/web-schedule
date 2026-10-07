@@ -134,6 +134,16 @@
   .lv-m { background: var(--amber-bg); color: var(--amber); }
   .lv-l { background: var(--rule-soft); color: var(--ink-soft); }
   .lv-g { background: var(--rule-soft); color: var(--green); }
+  .prep { display: flex; flex-direction: column; gap: .4rem; }
+  .prep h2 { font-size: 1rem; margin: 0; }
+  .prep .hint { margin: 0; }
+  #prepTable td { vertical-align: top; }
+  #prepTable td.dt { white-space: nowrap; font-weight: 700; }
+  #prepTable td.dt.soon { color: var(--red); }
+  #prepTable td.lead { color: var(--amber); white-space: nowrap; }
+  #prepTable td.why { color: var(--ink-soft); font-size: .8rem; min-width: 16rem; }
+  #prepTable tr.done td:not(:first-child) { opacity: .45; text-decoration: line-through; }
+  #prepTable input[type="checkbox"] { width: 1rem; height: 1rem; }
   .issues h2 { font-size: .95rem; color: var(--red); margin: 0 0 .35rem; }
   .issues ol { margin: 0; padding-left: 1.2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); column-gap: 2.2rem; row-gap: .6rem; color: var(--ink-soft); }
   .issues li b { color: var(--ink); font-weight: 700; }
@@ -246,6 +256,12 @@
     <ol id="issuesList"></ol>
   </aside>
 
+  <section class="prep" aria-labelledby="prepTitle">
+    <h2 id="prepTitle">上線前本院要先準備的事</h2>
+    <p class="hint">「最晚完成」會跟著上面的時程自動算；勾選只存在你自己的瀏覽器。前置時間是估計，以橘色表示。</p>
+    <div class="tbl"><table id="prepTable"></table></div>
+  </section>
+
   <div class="srclegend" aria-label="時間來源顏色">
     <span><b style="margin-right:.5rem">時間來源</b></span>
     <span><i class="srcm srcm-spec"></i>需求書寫的期限</span>
@@ -265,7 +281,7 @@
       <ul id="bufNote"></ul>
     </section>
   </div>
-  <p class="foot">工作天會跳過週末與國定假日（假日為預估，請以人事行政總處辦公日曆為準）；日曆天的最後一天遇假日順延。</p>
+  <p class="foot">工作天會跳過週末與國定假日（假日為預估，請以人事行政總處辦公日曆為準）；日曆天依需求書「翌日起算」，最後一天遇週末或假日順延到下一個上班日（民法第 122 條）。</p>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -448,16 +464,17 @@ function compute() {
     if (x.sec) return;
     const afters = (x.after || "").split(/[,，、\s]+/).filter(id => r[id]);
     const base = afters.length ? afters.map(id => r[id].e).reduce((a, b) => (a > b ? a : b)) : prev ? r[prev].e : null;
-    let natural = base ? nextWork(add(base, 1)) : null;
+    const calDay = U(x) === "cd" && !x.tender;   /* 履約期限：翌日起算的日曆天，起日不跳過週末 */
+    let natural = base ? (calDay ? add(base, 1) : nextWork(add(base, 1))) : null;
     /* 需等待：第一階段（接在決標之後的步驟：啟動會議・3 款風格、工作計畫書）要等主視覺完成後才開始 */
-    if (r.cisWait && afters.includes(awardId)) { const w = nextWork(add(r.cisProvide, 1)); if (!natural || w > natural) natural = w; }
+    if (r.cisWait && afters.includes(awardId)) { const w = calDay ? add(r.cisProvide, 1) : nextWork(add(r.cisProvide, 1)); if (!natural || w > natural) natural = w; }
     const ps = pinS(x), pe = pinE(x);
     const s = ps ? D(ps) : natural;
     let e;
     if (x.fixedEnd) e = D(x.fixedEnd);
     else if (pe) e = D(pe);
     else if (N(x) === 0) e = add(s, -1);   /* 天數 0：不計入，下一步從同一天開始 */
-    else e = run(nextWork(s), N(x), U(x), x.skipFirst);
+    else e = run(calDay ? s : nextWork(s), N(x), U(x), x.skipFirst);
     const skipped = !x.fixedEnd && !pe && N(x) === 0;
     r[x.id] = { s, e, skipped, pinnedS: !!ps, pinnedE: !!pe, overlap: !!ps && natural && D(ps) < natural, n: x.fixedEnd ? null : skipped ? 0 : count(s, e, U(x), x.skipFirst),
       ids: afters.length ? afters : (prev ? [prev] : []), awaitRow: afters.includes(awardId) };
@@ -696,7 +713,12 @@ function table(r) {
     if (q.skipped) notes.unshift('<span class="warn">天數 0：這一步不計入時程</span>');
     const badge = x.src ? '<i class="srcm srcm-' + x.src + '" title="時間來源：' + SRC_LABEL[x.src] + '"></i>' : '';
     h += '<tr id="row-' + x.id + '"' + (x.tender ? ' data-in="tender"' : '') + ' class="' + (cls + (x.src ? " src-" + x.src : "")).trim() + '"><td class="n"><button type="button" class="up" data-up="row-' + x.id + '" title="回到圖上的這一段" aria-label="回到圖上的 ' + x.name + '">↑</button>' + i + '</td><td class="step">' + badge + markRed(x, x.name) + (x.desc ? '<span class="desc">' + markRed(x, x.desc) + '</span>' : '') + '</td><td>' + dateCell(x, "start", q) + '</td><td>' + nCell + '</td><td>' + uCell + '</td><td>' + dateCell(x, "end", q) + '</td><td class="note">' + notes.join("<br>") + '</td></tr>';
-    if (x.award) h += '<tr class="total"><td></td><td>決標日</td><td colspan="4">' + rocW(r.award) + '</td><td class="note">招標約 ' + Math.round(diff(r.t1a.s, r.award) / 30.4 * 10) / 10 + ' 個月</td></tr>';
+    if (x.award) {
+      /* 決標後 45 天內如果碰到春節，在決標日這一列直接寫出來 */
+      const cny = HOLIDAYS.filter(([d, nm]) => /除夕|春節/.test(nm) && D(d) >= r.award && diff(r.award, D(d)) <= 45).map(([d]) => D(d));
+      const cnyTxt = cny.length ? '<br><span class="warn">決標後 ' + diff(r.award, cny[0]) + ' 天就是春節（' + roc(cny[0]) + '–' + (cny[cny.length - 1].getMonth() + 1) + '/' + cny[cny.length - 1].getDate() + ' 放假，連週末約 ' + (diff(cny[0], cny[cny.length - 1]) + 1) + ' 天）</span>' : '';
+      h += '<tr class="total"><td></td><td>決標日</td><td colspan="4">' + rocW(r.award) + '</td><td class="note">招標約 ' + Math.round(diff(r.t1a.s, r.award) / 30.4 * 10) / 10 + ' 個月' + cnyTxt + '</td></tr>';
+    }
     if (x.launch) h += '<tr class="total"><td></td><td>推算上線日</td><td colspan="4">' + rocW(r.launch) + '</td><td class="note">' + (r.gap > 0 ? '<span class="warn">比目標 ' + roc(r.target) + ' 晚 ' + r.gap + ' 天</span>' : '比目標 ' + roc(r.target) + ' 早 ' + (-r.gap) + ' 天') + '</td></tr>';
   });
   document.getElementById("tbl").innerHTML = h + '</tbody>';
@@ -777,6 +799,50 @@ function evaluateV2(r) {
     '<section><h3>比 10/02 舊版改善的地方</h3><ul>' + G.join("") + '</ul></section></div>');
   return H.join("");
 }
+/* 上線前本院要先準備的事：最晚完成日依時程主線推算 */
+const PREP = [
+  { id: "host", name: "決定主機：雲端（廠商提供）或院內地端", by: r => [r.e1.s, "一評（審定招標文件）"],
+    lead: "2–4 週", why: "需求書第七章標題還寫「待討論要雲端主機或是本地」；主機方式影響資安條文、報價和招標文件，一評前要定案。若用院內地端，虛擬主機、防火牆、WAF 要在測試區上線前備妥。" },
+  { id: "level", name: "資通系統列冊、確認防護需求等級", by: r => [r.t3.s, "上網公告"],
+    lead: "1–2 週", why: "防護需求等級要在招標時載明（需求書目前勾「普」），新網站也要列入本院資通系統清冊。" },
+  { id: "cloud", name: "雲端帳號、CDN／WAF 的歸屬與費用", by: r => [r.t3.s, "上網公告"],
+    lead: "1–2 週", why: "帳號登記在誰名下、費用由誰付、結案時如何移交，要寫進招標文件。" },
+  { id: "budget", name: "預算金額與年度", by: r => [r.t3.s, "上網公告"],
+    lead: "1–2 週", why: "需求書預算還是空白；決標在 116 年，若 116 年度預算未完成法定程序，招標文件要載明保留條款。" },
+  { id: "domain", name: "網址（網域名稱）：決定名稱、簽公文到一層核定、請資服處設定 DNS", by: r => [r.s2.s, "初步架構上線測試"],
+    lead: "2–4 週", why: "一層網域要簽公文到一層；測試區上線時就需要網址（正式網址最晚在 #1 首發版上線前生效）。" },
+  { id: "cis", name: "主視覺基本設計（Logo、標準色、標準字）提供給網站廠商", by: r => [r.s1a.s, "第一階段開始"],
+    lead: "—", why: "3 款網站風格要依主視覺基本設計提出；要和主視覺案確認交付日期。" },
+  { id: "content", name: "首發版內容：文字、照片與授權、英文翻譯、形象影片", by: r => [r.s2.s, "初步架構上線測試"],
+    lead: "依內容量", why: "初步架構要上線測試，首頁與首發頁面的內容要先就位；上線前完成中英文。" },
+  { id: "ssl", name: "HTTPS 憑證（TLS 1.2 以上）", by: r => [r.s3.s, "第二階段開始"],
+    lead: "1–2 週", why: "網域確定後才能申請；第二階段上線前要裝好。" },
+  { id: "scan", name: "黑白箱掃描：確認由誰掃、使用本院建議工具、預約掃描時段", by: r => [r.s3.s, "第二階段開始"],
+    lead: "2–4 週", why: "首掃、修補、複掃要在第二階段（" + "21 個日曆天" + "）內完成，掃描時段要先排好；前二級弱點要修補完成。" },
+  { id: "a11y", name: "無障礙檢測與標章申請", by: r => [r.launch, "#1 首發版上線"],
+    lead: "2–4 週", why: "需求書要求符合 AA 並取得無障礙標章，但沒寫哪個階段取得；檢測、修正、審查都要時間。" },
+  { id: "policy", name: "網站必要頁面：隱私權政策、資訊安全政策、聯絡資訊、流量統計與 Cookie 告知", by: r => [r.launch, "#1 首發版上線"],
+    lead: "1–2 週", why: "上線前要放上；若有表單蒐集個資，另要個資告知。" },
+  { id: "golive", name: "上線前資安檢核（需求書六(七)）", by: r => [r.launch, "#1 首發版上線"],
+    lead: "1 週", why: "連線來源控管、安全性更新、GCB、弱點修補完成後才上線。" },
+  { id: "static", name: "轉靜態網頁後的存放主機", by: r => [r.s4 && r.s4.e ? r.s4.e : D("2028-12-31"), "契約結束"],
+    lead: "—", why: "系列活動結束後網站要轉靜態網頁交給本院，院內要準備放置的空間與網址。" },
+];
+const PKEY = "centennial-web-prep";
+let prepDone = {};
+try { prepDone = JSON.parse(localStorage.getItem(PKEY) || "{}") || {}; } catch (e) { prepDone = {}; }
+function renderPrep(r) {
+  const today = D(TODAY);
+  const rows = PREP.map(x => { const [d, ms] = x.by(r); return Object.assign({ d, ms }, x); }).sort((a, b) => a.d - b.d);
+  let h = '<thead><tr><th>完成</th><th>要先做的事</th><th>最晚完成</th><th>對應時程</th><th>前置時間</th><th>說明</th></tr></thead><tbody>';
+  rows.forEach(x => {
+    const done = !!prepDone[x.id], soon = diff(today, x.d) < 60;
+    h += '<tr' + (done ? ' class="done"' : '') + '><td><input type="checkbox" id="prep-' + x.id + '" data-prep="' + x.id + '"' + (done ? ' checked' : '') + ' aria-label="' + x.name + ' 已完成"></td>' +
+      '<td><label for="prep-' + x.id + '">' + x.name + '</label></td><td class="dt' + (soon && !done ? ' soon' : '') + '">' + rocW(x.d) + '</td><td>' + x.ms + '</td>' +
+      '<td class="lead">' + x.lead + '</td><td class="why">' + x.why + '</td></tr>';
+  });
+  document.getElementById("prepTable").innerHTML = h + '</tbody>';
+}
 function issues(r) {
   const isV2 = !XL && st.ver === "v1007b";
   document.getElementById("issuesTitle").textContent = isV2 ? "整體評估（115/10/07 v2 版需求書）" : "可能的問題";
@@ -847,11 +913,16 @@ function render() {
   document.getElementById("waitHint").textContent = r.cisWait
     ? "決標 " + roc(r.award) + " 後，要等到 " + roc(r.cisProvide) + " 主視覺完成才進入第一階段（空等約 " + Math.max(0, diff(r.award, r.s1a.s)) + " 天）。需求書第一階段期限要改寫成「自本院提供主視覺次日起 15／30 工作天」。"
     : "決標後就進入第一階段；3 款風格用主視覺當時已有的基本設計（Logo、標準色）提案，CIS 定稿後再套用。";
-  draw(r); table(r); chips(r); notes(r); issues(r);
+  draw(r); table(r); chips(r); notes(r); issues(r); renderPrep(r);
 }
 const refocus = id => { const n = document.getElementById(id); if (n) n.focus({ preventScroll: true }); };
 document.addEventListener("change", e => {
   const t = e.target;
+  if (t.dataset.prep) {
+    prepDone[t.dataset.prep] = t.checked;
+    try { localStorage.setItem(PKEY, JSON.stringify(prepDone)); } catch (e) {}
+    t.closest("tr").classList.toggle("done", t.checked); return;
+  }
   if (t.id === "verSel") {
     st.ver = t.value; st.s = st.sv[st.ver] = st.sv[st.ver] || {};
     if (!XL) STEPS = VERSIONS[st.ver].steps;
@@ -1105,8 +1176,8 @@ async function buildXlsx() {
     if (i === 0) mF = `K${R}`;
     else {
       const prevE = ids.length > 1 ? `MAX(${ids.map(look).join(",")})` : `IF(I${R}="",N${R - 1},INDEX(${NR},MATCH(I${R},${AR},0)))`;
-      let nat = `WORKDAY(${prevE},1,${HOLR})`;
-      if (q.awaitRow) nat = `MAX(${nat},IF(設定!$B$10="需等待",WORKDAY(設定!$B$11,1,${HOLR}),0))`;
+      let nat = x.tender ? `WORKDAY(${prevE},1,${HOLR})` : `IF(H${R}="日曆天",${prevE}+1,WORKDAY(${prevE},1,${HOLR}))`;
+      if (q.awaitRow) nat = `MAX(${nat},IF(設定!$B$10="需等待",IF(H${R}="日曆天",設定!$B$11+1,WORKDAY(設定!$B$11,1,${HOLR})),0))`;
       mF = `IF(K${R}<>"",K${R},${nat})`;
     }
     row.getCell(13).value = { formula: mF, result: serial(q.s) };
