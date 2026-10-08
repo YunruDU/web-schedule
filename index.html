@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>網站評估時程</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -149,6 +150,23 @@
   #prepTable td.why { color: var(--ink-soft); font-size: .8rem; min-width: 16rem; }
   #prepTable tr.done td:not(:first-child) { opacity: .45; text-decoration: line-through; }
   #prepTable input[type="checkbox"] { width: 1rem; height: 1rem; }
+  .sheetmsg { background: var(--surface); border: 1px solid var(--rule); border-left: 3px solid var(--blue); border-radius: 4px; padding: .8rem 1rem; font-size: .92rem; display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; }
+  .sheetmsg.err { border-left-color: var(--red); background: var(--red-bg); color: var(--ink); }
+  .sheetmsg b { color: var(--red); }
+  body.sheet-wait .wrap > :not(header):not(#sheetMsg), body.sheet-fail .wrap > :not(header):not(#sheetMsg) { display: none !important; }
+  .chglog { display: flex; flex-direction: column; gap: .4rem; }
+  .chglog h2 { font-size: 1rem; margin: 0; }
+  .chglog .hint { margin: 0; }
+  #chgTable td { vertical-align: top; font-size: .82rem; }
+  #chgTable td.t { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+  #chgTable td.old { color: var(--ink-faint); text-decoration: line-through; }
+  #chgTable td.new { color: var(--red); font-weight: 700; }
+  td.note .chg { color: var(--violet); }
+  .pwdbox { display: inline-flex; align-items: center; gap: .3rem; font-size: .86rem; }
+  .pwdbox input { font: inherit; font-size: .84rem; width: 9rem; padding: .15rem .35rem; border: 1px solid var(--rule); border-radius: 3px; background: var(--surface); color: var(--ink); }
+  .savemsg { font-size: .84rem; font-weight: 500; }
+  .savemsg.ok { color: var(--green); } .savemsg.err { color: var(--red); } .savemsg.busy { color: var(--ink-soft); }
+  body.sheet-mode .edit-only { display: none !important; }
   .issues h2 { font-size: .95rem; color: var(--red); margin: 0 0 .35rem; }
   .issues ol { margin: 0; padding-left: 1.2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); column-gap: 2.2rem; row-gap: .6rem; color: var(--ink-soft); }
   .issues li b { color: var(--ink); font-weight: 700; }
@@ -190,8 +208,10 @@
     <p class="sub">從需求說明書、招標到 #F Final 版的網站案時程，並對照主視覺案。下方表格的空格都可以改：填「起」或「迄」就把那一步釘在那天，填「天數」就自動往後推；圖和日期會一起更新。</p>
   </header>
 
+  <div class="sheetmsg" id="sheetMsg" role="status" hidden></div>
+
   <div class="srcbar">
-    <label class="field" for="verSel"><b>需求書版本</b>
+    <label class="field edit-only" for="verSel"><b>需求書版本</b>
       <select id="verSel">
         <option value="v1008">115/10/08 版（最新）</option>
         <option value="v1007b">115/10/07 v2 版</option>
@@ -200,9 +220,12 @@
       </select>
     </label>
     <span>資料來源：</span><span class="src" id="srcText">內建範例</span>
-    <label class="btn" for="xlsxFile">載入 Excel<input type="file" id="xlsxFile" class="vh" accept=".xlsx,.xls,.ods"></label>
+    <label class="btn edit-only" for="xlsxFile">載入 Excel<input type="file" id="xlsxFile" class="vh" accept=".xlsx,.xls,.ods"></label>
     <button class="btn" id="exportBtn" type="button">匯出 Excel</button>
-    <button class="btn" id="useBuiltin" type="button">改回內建範例</button>
+    <button class="btn edit-only" id="useBuiltin" type="button">改回內建範例</button>
+    <button class="btn" id="sheetReload" type="button" hidden>重新讀取試算表</button>
+    <span class="pwdbox" id="pwdBox" hidden><label for="editPwd">編輯密碼</label> <input type="password" id="editPwd" autocomplete="off" placeholder="改時間前先輸入"></span>
+    <span class="savemsg" id="saveMsg" aria-live="polite"></span>
     <span class="hint" id="exportMsg" aria-live="polite"></span>
     <span class="hint">「匯出 Excel」會把畫面上目前的時程（含網頁上改過的天數、日期與設定）存成共用版格式，改完可以再「載入 Excel」。放在 Google 雲端硬碟的話：Google 試算表選「檔案 → 下載 → Microsoft Excel (.xlsx)」再載入；也可以把檔案直接拖進這個頁面。</span>
   </div>
@@ -263,6 +286,12 @@
     <span class="hint">在網頁上改的數字只存在你自己的瀏覽器，不會寫回 Excel；要讓大家都看到，請改共用的 Excel。</span>
   </div>
 
+  <section class="chglog" id="chgSection" aria-labelledby="chgTitle" hidden>
+    <h2 id="chgTitle">異動紀錄（共編試算表）</h2>
+    <p class="hint" id="chgHint"></p>
+    <div class="tbl"><table id="chgTable"></table></div>
+  </section>
+
   <aside class="issues" aria-labelledby="issuesTitle">
     <h2 id="issuesTitle">可能的問題</h2>
     <div id="evalBody"></div>
@@ -299,6 +328,15 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
+/* ============ 共編試算表 ============
+   填入 Google 試算表的網址後，網頁會自動讀取試算表（讀不到就不顯示時程）。
+   空白＝不使用試算表，改用下面的內建資料。
+   可以貼：一般的試算表網址（需「知道連結的使用者可以檢視」），或「發布到網路」的連結。 */
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/1H_r4b1oOqLzeAINeOauve8w-fc15eZLMZSLem6LP998/edit";
+/* 網頁修改要存回試算表：填入 Apps Script「網頁應用程式」網址（https://script.google.com/macros/s/.../exec）。
+   空白＝網頁只能看，要改請到試算表。 */
+const SHEET_WRITE_URL = "https://script.google.com/macros/s/AKfycbwyavWwZ0lNZH6uZ950IoxznwwYmBypoTFLZDa34jtnyybVh_OVPsPBJ4H9p21ni8jtvA/exec";
+
 /* ============ 預設資料（可在頁面上改） ============ */
 const DEF = { view: "all", target: "2027-05-31", cisAward: "2026-11-02", cisFinal: "2027-03-31", anniv: "2028-06-09", cisWait: "no", cisProvide: "", zoom: "1.5", subs: "off" };
 /* after: 從哪一步完成的次日起算（預設是上一步）；ms: 一天的會議或里程碑 */
@@ -795,11 +833,12 @@ function table(r) {
       h += '<tr class="grp"><td></td><td colspan="6"><b>' + lbl + '</b>（展開 ' + subs.length + ' 步，共 ' + count(a, b, "wd") + ' 個工作天，' + roc(a) + '–' + roc(b) + '）</td></tr>';
     }
     inSub = lbl;
-    const nCell = x.fixedEnd ? '—' : '<input type="number" min="0" max="500" id="n-' + x.id + '" data-k="n" data-id="' + x.id + '" value="' + q.n + '" aria-label="' + x.name + ' 天數">';
+    const nCell = x.fixedEnd ? '—' : '<input type="number" min="0" max="500" id="n-' + x.id + '" data-k="n" data-id="' + x.id + '" value="' + (q.pinnedE || q.skipped ? q.n : N(x)) + '" aria-label="' + x.name + ' 天數">';
     const uCell = x.fixedEnd ? '' : '<select id="u-' + x.id + '" data-k="unit" data-id="' + x.id + '" aria-label="' + x.name + ' 單位"><option value="wd"' + (U(x) === "wd" ? " selected" : "") + '>工作天</option><option value="cd"' + (U(x) === "cd" ? " selected" : "") + '>日曆天</option></select>';
     const notes = [];
     if (q.overlap) notes.push('<span class="warn">起日早於上一步完成，時程重疊</span>');
     if (x.note) notes.push(/^需求書/.test(x.note) ? '<span class="req">' + x.note + '</span>' : x.note);
+    if (SHEET_MODE) stepChanges(x.id).forEach(c => notes.push('<span class="chg">' + c.field + '：原本 ' + (c.first || "空白") + ' → 改成 ' + (c.last || "空白") + '（' + c.t + '）</span>'));
     if ((x.after || "").split(/[,，、\s]+/).includes(STEPS.find(z => z.award)?.id || "t6")) notes.push('<span style="color:var(--violet)">' + (r.cisWait ? '目前：等主視覺完成（' + roc(r.cisProvide) + '）後才開始' : '目前：不等主視覺，決標後直接開始') + '，在圖上方切換</span>');
     const cls = [x.ms || x.award || x.launch ? "ms" : "", x.sub ? "sub" : ""].join(" ").trim();
     if (q.skipped) notes.unshift('<span class="warn">天數 0：這一步不計入時程</span>');
@@ -943,8 +982,8 @@ function renderPrep(r) {
   document.getElementById("prepTable").innerHTML = h + '</tbody>';
 }
 function issues(r) {
-  const isV2 = !XL && (st.ver === "v1007b" || st.ver === "v1008");
-  document.getElementById("issuesTitle").textContent = isV2 ? "整體評估（" + VERSIONS[st.ver].label.replace(/（.*?）/g, "") + "）" : "可能的問題";
+  const isV2 = SHEET_MODE ? STEPS.some(z => z.id === "k1" || z.id === "d1") : !XL && (st.ver === "v1007b" || st.ver === "v1008");
+  document.getElementById("issuesTitle").textContent = isV2 ? "整體評估（" + (SHEET_MODE ? "共編試算表" : VERSIONS[st.ver].label.replace(/（.*?）/g, "")) + "）" : "可能的問題";
   document.getElementById("evalBody").innerHTML = isV2 ? evaluateV2(r) : "";
   document.getElementById("issuesList").hidden = isV2;
   if (isV2) return;
@@ -1012,11 +1051,15 @@ function render() {
   document.getElementById("waitHint").textContent = r.cisWait
     ? "決標 " + roc(r.award) + " 後，要等到 " + roc(r.cisProvide) + " 主視覺完成才進入第一階段（空等約 " + Math.max(0, diff(r.award, r.s1a.s)) + " 天）。需求書第一階段期限要改寫成「自本院提供主視覺次日起 15／30 工作天」。"
     : "決標後就進入第一階段；3 款風格用主視覺當時已有的基本設計（Logo、標準色）提案，CIS 定稿後再套用。";
-  draw(r); table(r); chips(r); notes(r); issues(r); renderPrep(r);
+  draw(r); table(r); chips(r); notes(r); issues(r); renderPrep(r); renderChanges(); lockEdits();
 }
 const refocus = id => { const n = document.getElementById(id); if (n) n.focus({ preventScroll: true }); };
 document.addEventListener("change", e => {
   const t = e.target;
+  if (SHEET_MODE && SHEET_WRITE_URL && t.id !== "editPwd") {
+    const ch = sheetChangesFrom(t);
+    if (ch) { saveToSheet(ch); return; }
+  }
   if (t.dataset.prep) {
     prepDone[t.dataset.prep] = t.checked;
     try { localStorage.setItem(PKEY, JSON.stringify(prepDone)); } catch (e) {}
@@ -1098,6 +1141,7 @@ document.getElementById("chart").addEventListener("keydown", e => {
 });
 document.addEventListener("click", e => {
   const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.clear && SHEET_MODE && SHEET_WRITE_URL) { saveToSheet([{ sheet: "步驟", id: t.dataset.id, field: STEP_FIELD[t.dataset.clear], value: "" }]); return; }
   if (t.dataset.clear) { const o = st.s[t.dataset.id] = Object.assign({}, st.s[t.dataset.id]); o[t.dataset.clear] = null; save(); render(); }
   else if (t.id === "reset") { st.g = Object.assign({}, DEF, XL ? XL.settings : {}); st.s = st.sv[XL ? "xl" : st.ver] = {}; save(); render(); }
   else if (t.id === "useBuiltin") { useBuiltin(); }
@@ -1166,7 +1210,12 @@ function parseWorkbook(wb) {
     else if (k === "主視覺提供日") settings.cisProvide = v;
   });
   if (settings.cisProvide && settings.cisProvide === settings.cisFinal) delete settings.cisProvide;   /* 提供日＝預設（CIS 定稿日） */
-  return { steps, holidays, settings };
+  const log = [];
+  if (wb.Sheets["異動紀錄"]) XLSX.utils.sheet_to_json(wb.Sheets["異動紀錄"], { header: 1, raw: false, defval: "" }).slice(1).forEach(row => {
+    if (!txt(row[0])) return;
+    log.push({ t: txt(row[0]), sheet: txt(row[1]), cell: txt(row[2]), id: txt(row[3]), name: txt(row[4]), field: txt(row[5]), oldV: txt(row[6]), newV: txt(row[7]) });
+  });
+  return { steps, holidays, settings, log };
 }
 function applyData(data, meta) {
   STEPS = data.steps;
@@ -1209,7 +1258,127 @@ document.getElementById("xlsxFile").addEventListener("change", e => { loadFile(e
 document.addEventListener("dragover", e => { e.preventDefault(); document.body.classList.add("drag"); });
 document.addEventListener("dragleave", e => { if (!e.relatedTarget) document.body.classList.remove("drag"); });
 document.addEventListener("drop", e => { e.preventDefault(); document.body.classList.remove("drag"); loadFile(e.dataTransfer.files[0]); });
-try { const saved = JSON.parse(localStorage.getItem(XKEY) || "null"); if (saved && saved.data) { applyData(saved.data, saved.meta); st.s = st.sv.xl = st.sv.xl || {}; } } catch (e) {}
+if (!SHEET_URL) { try { const saved = JSON.parse(localStorage.getItem(XKEY) || "null"); if (saved && saved.data) { applyData(saved.data, saved.meta); st.s = st.sv.xl = st.sv.xl || {}; } } catch (e) {} }
+
+/* ============ 共編試算表：讀取、唯讀、異動紀錄 ============ */
+let SHEET_MODE = false, CHG = {}, CHGLOG = [];
+function sheetExportUrl(u) {
+  u = String(u || "").trim();
+  let m = u.match(/\/spreadsheets\/d\/e\/([\w-]+)/);           /* 發布到網路的連結 */
+  if (m) return "https://docs.google.com/spreadsheets/d/e/" + m[1] + "/pub?output=xlsx";
+  m = u.match(/\/spreadsheets\/d\/([\w-]+)/);                   /* 一般試算表網址 */
+  if (m) return "https://docs.google.com/spreadsheets/d/" + m[1] + "/export?format=xlsx";
+  return u;
+}
+function sheetMsg(html, err) {
+  const el = document.getElementById("sheetMsg");
+  el.hidden = !html; el.className = "sheetmsg" + (err ? " err" : ""); el.innerHTML = html || "";
+}
+async function loadSheet(quiet) {
+  if (!quiet) { document.body.classList.add("sheet-wait"); document.body.classList.remove("sheet-fail"); sheetMsg("讀取共編試算表中…"); }
+  try {
+    if (typeof XLSX === "undefined") throw new Error("讀取 Excel 的元件沒有載入");
+    const res = await fetch(sheetExportUrl(SHEET_URL) + (sheetExportUrl(SHEET_URL).includes("?") ? "&" : "?") + "t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("試算表回應 " + res.status);
+    const data = parseWorkbook(XLSX.read(new Uint8Array(await res.arrayBuffer()), { type: "array" }));
+    const now = new Date(), at = roc(now) + " " + pad(now.getHours()) + ":" + pad(now.getMinutes());
+    applyData(data, { file: "Google 共編試算表", at });
+    SHEET_MODE = true;
+    document.body.classList.add("sheet-mode");
+    st.s = {}; st.g = Object.assign({}, st.g, { cisWait: "no", cisProvide: "" }, data.settings);
+    buildChanges(data.log || []);
+    document.body.classList.remove("sheet-wait");
+    sheetMsg("");
+    document.getElementById("sheetReload").hidden = false;
+    if (SHEET_WRITE_URL) {
+      document.getElementById("pwdBox").hidden = false;
+      try { const pw = localStorage.getItem(PWKEY); if (pw && !document.getElementById("editPwd").value) document.getElementById("editPwd").value = pw; } catch (e) {}
+    }
+    document.querySelector("header .sub").textContent = "從需求說明書、招標到 #F Final 版的網站案時程，並對照主視覺案。資料來自 Google 共編試算表" +
+      (SHEET_WRITE_URL ? "；在網頁或試算表上修改都會存回試算表（網頁修改要先輸入編輯密碼）" : "，要修改請到試算表") + "；每次修改都會記在下方的「異動紀錄」。";
+    render(); showSource();
+  } catch (e) {
+    document.body.classList.remove("sheet-wait"); document.body.classList.add("sheet-fail");
+    sheetMsg('<b>目前讀不到共編試算表，時程先不顯示。</b><span>可能是網路問題，或試算表的共用／發布設定被關掉了。（' + (e.message || e) + '）</span>' +
+      '<button class="btn" type="button" id="sheetRetry">重新讀取</button>', true);
+  }
+}
+/* 每一步、每個欄位：最早的「原本的值」與最新的「改成」 */
+function buildChanges(log) {
+  CHGLOG = log.slice().reverse();   /* 新的在前 */
+  CHG = {};
+  log.forEach(c => {
+    const key = (c.sheet === "步驟" ? c.id : c.sheet) + "|" + c.field;
+    if (!CHG[key]) CHG[key] = { sheet: c.sheet, id: c.id, name: c.name, field: c.field, first: c.oldV, last: c.newV, t: c.t, n: 0 };
+    CHG[key].last = c.newV; CHG[key].t = c.t; CHG[key].n++;
+  });
+}
+const stepChanges = id => Object.values(CHG).filter(c => c.sheet === "步驟" && c.id === id && c.first !== c.last);
+function renderChanges() {
+  const sec = document.getElementById("chgSection");
+  sec.hidden = !SHEET_MODE;
+  if (!SHEET_MODE) return;
+  const hint = document.getElementById("chgHint");
+  if (!CHGLOG.length) {
+    hint.textContent = "試算表目前沒有異動紀錄（尚未有人修改，或還沒裝好自動記錄的程式）。";
+    document.getElementById("chgTable").innerHTML = "";
+    return;
+  }
+  hint.textContent = "共 " + CHGLOG.length + " 筆，最新的在最上面。紀錄來自試算表的「異動紀錄」工作表，每次有人修改就自動新增一列。";
+  let h = '<thead><tr><th>時間</th><th>工作表</th><th>步驟</th><th>欄位</th><th>原本的值</th><th>改成</th></tr></thead><tbody>';
+  CHGLOG.forEach(c => {
+    h += '<tr><td class="t">' + c.t + '</td><td>' + c.sheet + '</td><td>' + (c.name || c.id || "") + '</td><td>' + c.field + '</td><td class="old">' + (c.oldV || "（空白）") + '</td><td class="new">' + (c.newV || "（空白）") + '</td></tr>';
+  });
+  document.getElementById("chgTable").innerHTML = h + '</tbody>';
+}
+/* 共編模式：網頁只能看，要改請到試算表（畫面相關的設定仍可調） */
+function lockEdits() {
+  if (!SHEET_MODE) return;
+  const sel = SHEET_WRITE_URL ? '#reset' : '#tbl input, #tbl select, #tbl button.x, .chip input, .wait input, #g-target, #g-cisAward, #g-cisFinal, #reset';
+  document.querySelectorAll(sel).forEach(el => { el.disabled = true; el.title = SHEET_WRITE_URL ? "共編模式：修改會直接存回試算表，不需要還原" : "共編模式：請到 Google 試算表修改"; });
+}
+/* 網頁上的修改 → 試算表的欄位 */
+const PWKEY = "centennial-web-editpwd";
+const STEP_FIELD = { n: "天數", unit: "單位", start: "指定起日", end: "指定迄日" };
+const SET_FIELD = { "g-target": "目標上線日", "g-cisAward": "主視覺決標日", "g-cisFinal": "CIS 定稿日", "g-cisProvide": "主視覺提供日" };
+function sheetChangesFrom(t) {
+  if (t.dataset.id && STEP_FIELD[t.dataset.k]) {
+    const x = STEPS.find(z => !z.sec && z.id === t.dataset.id);
+    let v = t.value;
+    if (t.dataset.k === "unit") v = v === "cd" ? "日曆天" : "工作天";
+    if (t.dataset.k === "n") { const n = parseInt(v, 10); v = isNaN(n) ? "" : String(Math.max(0, Math.min(500, n))); }
+    const out = [{ sheet: "步驟", id: t.dataset.id, field: STEP_FIELD[t.dataset.k], value: v }];
+    if (t.dataset.k === "n" && x && pinE(x)) out.push({ sheet: "步驟", id: x.id, field: "指定迄日", value: "" });   /* 改天數＝不再釘住迄日 */
+    return out;
+  }
+  if (SET_FIELD[t.id]) return [{ sheet: "設定", field: SET_FIELD[t.id], value: t.value }];
+  if (t.dataset.g === "cisWait") return [{ sheet: "設定", field: "3款風格是否等待主視覺", value: t.value === "yes" ? "需等待" : "不需等待" }];
+  return null;
+}
+function saveMsg(text, cls) { const el = document.getElementById("saveMsg"); el.textContent = text || ""; el.className = "savemsg" + (cls ? " " + cls : ""); }
+let saving = false;
+async function saveToSheet(changes) {
+  const pwd = document.getElementById("editPwd").value.trim();
+  if (!pwd) { saveMsg("請先在上方輸入編輯密碼，再修改。", "err"); render(); document.getElementById("editPwd").focus(); return; }
+  if (saving) { saveMsg("上一筆還在儲存，請稍等再改。", "err"); render(); return; }
+  saving = true; saveMsg("儲存到試算表中…", "busy");
+  try {
+    const res = await fetch(SHEET_WRITE_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ pwd, changes }) });
+    const ans = await res.json();
+    if (!ans.ok) throw new Error(ans.error || "儲存失敗");
+    try { localStorage.setItem(PWKEY, pwd); } catch (e) {}
+    const now = new Date();
+    saveMsg("已存回試算表（" + pad(now.getHours()) + ":" + pad(now.getMinutes()) + "）", "ok");
+    await loadSheet(true);
+  } catch (e) {
+    saveMsg("沒有存成功：" + (e.message || e) + "。畫面已回到試算表目前的內容。", "err");
+    render();
+  } finally { saving = false; }
+}
+document.addEventListener("click", e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.id === "sheetRetry" || t.id === "sheetReload") loadSheet();
+});
 
 /* ============ 匯出 Excel（ExcelJS；格式與共用版範本相同，改完可以再載入） ============ */
 function loadScript(src) {
@@ -1367,6 +1536,6 @@ async function exportXlsx() {
   } catch (e) { msg.textContent = "匯出失敗：" + (e.message || e); }
 }
 
-render();
-showSource();
+if (SHEET_URL) loadSheet();
+else { render(); showSource(); }
 </script>
