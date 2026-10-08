@@ -20,6 +20,8 @@
     --red: #c23b2e;        /* 紅筆：落後、緩衝 */
     --red-bg: #fbe9e6;
     --green: #2f7d5b;
+    --teal: #2a7a6f;       /* 本院做的 */
+    --teal-bg: #e3f2ef;
     --amber: #a0620a;      /* 需求書沒寫、先估計的天數 */
     --amber-bg: #fdf1dc;
     --band: rgba(120, 128, 140, .12);
@@ -29,16 +31,17 @@
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
     --bg: #17191c; --surface: #1f2226; --ink: #e7e9ec; --ink-soft: #adb3bd; --ink-faint: #818894;
     --rule: #383c43; --rule-soft: #2b2e33; --blue: #7fa6e0; --blue-bg: #1f2b3d; --violet: #b996d4; --violet-bg: #2c2335;
-    --red: #ec8576; --red-bg: #3a2320; --green: #7cc3a0; --amber: #e2a85a; --amber-bg: #3a2c17; --band: rgba(200, 205, 215, .08); --band-hol: rgba(236, 133, 118, .14);
+    --red: #ec8576; --red-bg: #3a2320; --green: #7cc3a0; --amber: #e2a85a; --amber-bg: #3a2c17; --teal: #6cc4b6; --teal-bg: #183230; --band: rgba(200, 205, 215, .08); --band-hol: rgba(236, 133, 118, .14);
     color-scheme: dark;
   }}
   :root[data-theme="dark"] {
     --bg: #17191c; --surface: #1f2226; --ink: #e7e9ec; --ink-soft: #adb3bd; --ink-faint: #818894;
     --rule: #383c43; --rule-soft: #2b2e33; --blue: #7fa6e0; --blue-bg: #1f2b3d; --violet: #b996d4; --violet-bg: #2c2335;
-    --red: #ec8576; --red-bg: #3a2320; --green: #7cc3a0; --amber: #e2a85a; --amber-bg: #3a2c17; --band: rgba(200, 205, 215, .08); --band-hol: rgba(236, 133, 118, .14);
+    --red: #ec8576; --red-bg: #3a2320; --green: #7cc3a0; --amber: #e2a85a; --amber-bg: #3a2c17; --teal: #6cc4b6; --teal-bg: #183230; --band: rgba(200, 205, 215, .08); --band-hol: rgba(236, 133, 118, .14);
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.6; }
   .wrap { max-width: 80rem; margin: 0 auto; padding-block: 2rem 4rem; padding-inline: 16px; display: flex; flex-direction: column; gap: 1.2rem; }
   h1 { font-size: 1.45rem; margin: 0; text-wrap: balance; }
@@ -68,7 +71,7 @@
   svg circle[data-go].hl { fill: var(--red); r: 3; }
   svg g[data-go].hl text { fill: var(--red); font-weight: 700; }
   svg g[data-go].hl rect { stroke: var(--red); stroke-width: 1; }
-  #tbl tr.hl td { background: var(--red-bg); }
+  #tbl tr.hl td, #prepTable tr.hl td { background: var(--red-bg); }
   .legend { display: flex; flex-wrap: wrap; gap: .35rem 1.2rem; font-size: .8rem; color: var(--ink-soft); }
   .legend span { display: inline-flex; align-items: center; gap: .35rem; }
   .lg { width: 1.4rem; height: .7rem; border-radius: 2px; display: inline-block; }
@@ -141,6 +144,8 @@
   #prepTable td.dt { white-space: nowrap; font-weight: 700; }
   #prepTable td.dt.soon { color: var(--red); }
   #prepTable td.lead { color: var(--amber); white-space: nowrap; }
+  #prepTable td.basis { font-size: .78rem; color: var(--red); min-width: 10rem; }
+  #prepTable td.basis.inf { color: var(--ink-soft); }
   #prepTable td.why { color: var(--ink-soft); font-size: .8rem; min-width: 16rem; }
   #prepTable tr.done td:not(:first-child) { opacity: .45; text-decoration: line-through; }
   #prepTable input[type="checkbox"] { width: 1rem; height: 1rem; }
@@ -188,7 +193,8 @@
   <div class="srcbar">
     <label class="field" for="verSel"><b>需求書版本</b>
       <select id="verSel">
-        <option value="v1007b">115/10/07 v2 版（最新）</option>
+        <option value="v1008">115/10/08 版（最新）</option>
+        <option value="v1007b">115/10/07 v2 版</option>
         <option value="v1007">115/10/07 第一版</option>
         <option value="v1002">115/10/02 舊版（四階段）</option>
       </select>
@@ -221,12 +227,19 @@
         <option value="3">3 倍</option>
       </select>
     </label>
+    <label class="field" for="g-subs">同時進行的細項
+      <select id="g-subs">
+        <option value="off">收合</option>
+        <option value="on">展開</option>
+      </select>
+    </label>
     <span class="hint">放大後在圖上按住滑鼠左右拖曳，或用下方捲軸移動；滑到框或文字上，對應的那一段會變紅。</span>
   </div>
   <div class="board" id="board"><svg id="chart" viewBox="0 0 1240 545" role="img" aria-label="網站評估時程圖"></svg></div>
 
   <div class="legend">
-    <span><i class="lg" style="background:var(--blue-bg);border:1.5px solid var(--blue)"></i>網站案主線</span>
+    <span><i class="lg" style="background:var(--blue-bg);border:1.5px solid var(--blue)"></i>網站廠商做的</span>
+    <span><i class="lg" style="background:var(--teal-bg);border:1.5px solid var(--teal)"></i>本院做的</span>
     <span><i class="lg" style="background:var(--violet-bg);border:1.5px solid var(--violet)"></i>主視覺案</span>
     <span><i class="lg" style="background:var(--band)"></i>年底</span>
     <span><i class="lg" style="background:var(--band-hol)"></i>春節</span>
@@ -256,9 +269,9 @@
     <ol id="issuesList"></ol>
   </aside>
 
-  <section class="prep" aria-labelledby="prepTitle">
+  <section class="prep" id="prepSection" aria-labelledby="prepTitle" hidden>
     <h2 id="prepTitle">上線前本院要先準備的事</h2>
-    <p class="hint">「最晚完成」會跟著上面的時程自動算；勾選只存在你自己的瀏覽器。前置時間是估計，以橘色表示。</p>
+    <p class="hint">「最晚完成」會跟著上面的時程自動算；勾選只存在你自己的瀏覽器。前置時間是估計，以橘色表示；依據是紅色的來自需求書，灰色的是你提出或推論的。</p>
     <div class="tbl"><table id="prepTable"></table></div>
   </section>
 
@@ -287,7 +300,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 /* ============ 預設資料（可在頁面上改） ============ */
-const DEF = { view: "all", target: "2027-05-31", cisAward: "2026-11-02", cisFinal: "2027-03-31", anniv: "2028-06-09", cisWait: "no", cisProvide: "", zoom: "1.5" };
+const DEF = { view: "all", target: "2027-05-31", cisAward: "2026-11-02", cisFinal: "2027-03-31", anniv: "2028-06-09", cisWait: "no", cisProvide: "", zoom: "1.5", subs: "off" };
 /* after: 從哪一步完成的次日起算（預設是上一步）；ms: 一天的會議或里程碑 */
 const TENDER = [
   { sec: "一、需求說明書", key: "prep" },
@@ -368,7 +381,9 @@ const PERF_NEW = [
 const PERF_V2 = [
   { sec: "三、網站履約（10/07 v2 版：三階段，期限皆為日曆天）", key: "build" },
   { id: "s1a", name: "第一階段：專案啟動會議・成立專案小組・需求訪談・3 款網站風格", short: "", n: 20, unit: "cd", after: "t6", style: true, note: "需求書：決標翌日起 20 個日曆天內",
-    desc: "成立專案小組並進行需求訪談。廠商依主視覺基本設計（Logo、標準色、標準字）提出 3 款網站風格。召開專案會議說明設計理念並做初期簡報。" },
+    desc: "成立專案小組並進行需求訪談。廠商依主視覺基本設計（Logo、標準色、標準字）提出 3 款網站風格。召開專案會議說明設計理念並做初期簡報。",
+    chartLabel: "啟動・訪談・風格", chartName: "第一階段：啟動・訪談・3 款風格",
+    parts: [{ name: "需求訪談", a: 0, b: .45 }, { name: "3 款網站風格", a: .2, b: .9 }, { name: "初期簡報", a: .85, b: 1 }] },
   { id: "d1", name: "確定網站風格", short: "確定風格", n: 10, unit: "cd", after: "s1a", acc: true, note: "需求書沒有寫，先估 10 個日曆天；不需要可把天數改成 0",
     desc: "本院從 3 款網站風格中擇定一款（可能需開會或簽核）。" },
   { id: "s1", name: "第一階段：繳交工作計畫書", short: "計畫書", n: 14, unit: "cd", after: "d1", note: "需求書：網站風格決定翌日起 14 個日曆天內",
@@ -386,18 +401,46 @@ const PERF_V2 = [
   { id: "s4", name: "第三階段：功能增修・維護及結案（至 117/12/31）", short: "第三階段・增修維護", fixedEnd: "2028-12-31", after: "a3",
     desc: "完整網站上線運作、功能增修及維護；技術支援、弱點更新、定期備份；交結案報告、無障礙測試通過報告、資安報告。#F 前完成 Final 版，結案付款 40%。" },
 ];
+/* 115/10/08 版需求書：啟動會議與需求訪談 10 天；提案簡報（3 款風格）在需求訪談核定後 14 天；工作計畫書 7 天；第二階段 20 天 */
+const PERF_V3 = [
+  { sec: "三、網站履約（10/08 版：三階段，期限皆為日曆天）", key: "build" },
+  { id: "k1", name: "第一階段：專案啟動暨需求訪談會議", short: "啟動・訪談", n: 10, unit: "cd", after: "t6", note: "需求書：決標翌日起 10 個日曆天內",
+    desc: "成立專案小組，召開 1 場專案啟動暨需求訪談會議，並交付需求訪談報告。" },
+  { id: "c1", name: "核定需求訪談", short: "核定", n: 7, unit: "cd", after: "k1", acc: true, note: "需求書沒有寫，先估 7 個日曆天；不需要可把天數改成 0",
+    desc: "本院核定需求訪談會議（訪談報告）；提案簡報從核定後起算。" },
+  { id: "s1a", name: "第一階段：提案簡報・3 款網站風格", short: "提案簡報", n: 14, unit: "cd", after: "c1", style: true, note: "需求書：需求訪談會議核定後 14 個日曆天內",
+    chartLabel: "提案簡報", chartName: "提案簡報・3 款網站風格",
+    desc: "廠商依主視覺基本設計（Logo、標準色、標準字）提出 3 款網站風格。召開提案會議說明設計理念並做初期簡報。" },
+  { id: "d1", name: "確定網站風格", short: "確定風格", n: 10, unit: "cd", after: "s1a", acc: true, note: "需求書沒有寫，先估 10 個日曆天；不需要可把天數改成 0",
+    desc: "本院從 3 款網站風格中擇定一款（可能需開會或簽核）。" },
+  { id: "s1", name: "第一階段：繳交工作計畫書", short: "計畫書", n: 7, unit: "cd", after: "d1", note: "需求書：網站風格決定翌日起 7 個日曆天內",
+    desc: "交工作計畫書（包含全案製作時程）1 式 2 份。" },
+  { id: "p1", name: "本院審查・驗收工作計畫書", short: "審查", n: 10, unit: "cd", after: "s1", acc: true, note: "需求書沒有寫，先估 10 個日曆天；不需要可把天數改成 0",
+    desc: "本院審查工作計畫書，提修正意見，確認後才進入初步架構。" },
+  { id: "s2", name: "第一階段：網站初步架構完成並上線測試（與主視覺結合）", short: "初步架構", n: 20, unit: "cd", after: "p1", note: "需求書：工作計畫書驗收後翌日起 20 個日曆天內",
+    desc: "完成網站初步架構與功能並與主視覺結合，在測試區上線測試；交工作報告書。" },
+  { id: "a1", name: "第一階段驗收", short: "驗收", n: 30, unit: "cd", after: "s2", acc: true, note: "需求書沒有寫；本院設定驗收抓 30 天",
+    desc: "本院驗收第一階段（啟動暨需求訪談、提案簡報與 3 款風格、工作計畫書、初步架構），合格後付款 20%。" },
+  { id: "s3", name: "第二階段：#1 首發版正式上線", short: "第二階段", n: 20, unit: "cd", after: "a1", launch: true, note: "需求書：第一階段驗收後翌日起 20 個日曆天內；另寫明 116/5/31（或與本院議定日）前正式上線",
+    desc: "網站建置完成並正式上線，完成資安弱點掃描與修補，交付操作手冊與工作報告書。" },
+  { id: "a3", name: "第二階段驗收", short: "驗收", n: 30, unit: "cd", after: "s3", acc: true, note: "需求書沒有寫；本院設定驗收抓 30 天",
+    desc: "本院驗收正式上線成果，合格後付款 40%。" },
+  { id: "s4", name: "第三階段：功能增修・維護及結案（至 117/12/31）", short: "第三階段・增修維護", fixedEnd: "2028-12-31", after: "a3",
+    desc: "完整網站上線運作、功能增修及維護；技術支援、弱點更新、定期備份；交結案報告、無障礙測試通過報告、資安報告。#F 前完成 Final 版，結案付款 40%。" },
+];
 /* 時間來源：spec＝需求書寫的、set＝本院（使用者）設定的、ai＝需求書沒寫、先估計的 */
 const SRC_TENDER = { rfp: "set", visit: "set", t1a: "ai", t1b: "ai", t1c: "ai", t1d: "ai", e1: "ai", t2: "ai", t3: "set", t4: "ai", t5: "ai", t6: "ai" };
 TENDER.forEach(x => { if (!x.sec) x.src = SRC_TENDER[x.id] || "ai"; });
 PERF_OLD.forEach(x => { if (!x.sec) x.src = x.acc ? "set" : "spec"; });
-[PERF_NEW, PERF_V2].forEach(arr => arr.forEach(x => { if (!x.sec) x.src = ({ d1: "ai", p1: "ai", a1: "set", a3: "set" })[x.id] || "spec"; }));
+[PERF_NEW, PERF_V2, PERF_V3].forEach(arr => arr.forEach(x => { if (!x.sec) x.src = ({ c1: "ai", d1: "ai", p1: "ai", a1: "set", a3: "set" })[x.id] || "spec"; }));
 const SRC_LABEL = { spec: "需求書", set: "本院設定", ai: "估計" };
 const VERSIONS = {
+  v1008: { label: "115/10/08 版需求書（三階段）", steps: TENDER.concat(PERF_V3) },
   v1007b: { label: "115/10/07 v2 版需求書（三階段）", steps: TENDER.concat(PERF_V2) },
   v1007: { label: "115/10/07 版需求書（三階段）", steps: TENDER.concat(PERF_NEW) },
   v1002: { label: "115/10/02 舊版（四階段）", steps: TENDER.concat(PERF_OLD) },
 };
-let STEPS = VERSIONS.v1007b.steps;
+let STEPS = VERSIONS.v1008.steps;
 
 let HOLIDAYS = [
   ["2026-09-25", "中秋節"], ["2026-09-28", "教師節"], ["2026-10-09", "國慶日補假"], ["2026-10-26", "光復節補假"], ["2026-12-25", "行憲紀念日"],
@@ -440,7 +483,7 @@ const KEY = "centennial-web-cp-v1";
 let st = {};
 try { st = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { st = {}; }
 st.g = Object.assign({}, DEF, st.g || {});
-if (!VERSIONS[st.ver] || !st.seenV2) { st.ver = "v1007b"; st.seenV2 = true; }   /* 第一次開新版時切到最新版 */
+if (!VERSIONS[st.ver] || !st.seenV3) { st.ver = "v1008"; st.seenV2 = st.seenV3 = true; }   /* 第一次開新版時切到最新版 */
 if (!st.sv) st.sv = { v1002: st.s || {} };   /* 舊資料當作舊版的修改 */
 st.s = st.sv[st.ver] = st.sv[st.ver] || {};
 STEPS = VERSIONS[st.ver].steps;
@@ -502,6 +545,7 @@ function compute() {
 
 /* ============ 畫圖（SVG） ============ */
 const NS = "http://www.w3.org/2000/svg";
+const SHOW_PREP = false;   /* 「本院準備」（圖上第 ③ 軌與準備清單）先不顯示；要顯示改成 true */
 const L = 30; let R = 1220, V0, V1;
 const X = d => L + Math.max(0, Math.min(1, diff(V0, d) / diff(V0, V1))) * (R - L);
 function sv(tag, attrs, text) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (text != null) e.textContent = text; return e; }
@@ -513,10 +557,11 @@ function draw(r) {
   /* 圖寬：時間軸拉長、字的大小不變，所以前段不會擠在一起；超出畫面時可左右捲動或拖曳 */
   const zoom = Math.max(1, parseFloat(st.g.zoom) || 1), W = Math.round(1240 * zoom);
   R = W - 20;
-  svg.setAttribute("viewBox", "0 0 " + W + " 545");
+  const VH = SHOW_PREP ? 760 : 545;
+  svg.setAttribute("viewBox", "0 0 " + W + " " + VH);
   svg.style.width = (zoom * 100) + "%";
   svg.style.minWidth = (68 * zoom) + "rem";
-  const Y = 255, YC = 430, AX = 500;
+  const Y = 255, YC = 430, Y3 = 630, AX = SHOW_PREP ? 712 : 500;
   const g = (cls) => { const e = sv("g", cls ? { class: cls } : {}); svg.append(e); return e; };
   const bands = g(), grid = g(), lines = g(), boxes = g(), marks = g(), labels = g();
 
@@ -538,7 +583,7 @@ function draw(r) {
   band("2027-02-04", "2027-02-10", "var(--band-hol)", "春節");
 
   /* 主線（白板那條長箭頭） */
-  lines.append(sv("text", { x: L, y: 66, "font-size": 17, "font-weight": 700, fill: "var(--blue)" }, "網站案"));
+  lines.append(sv("text", { x: L, y: 66, "font-size": 17, "font-weight": 700, fill: "var(--blue)" }, "① 網站案"));
   lines.append(sv("line", { x1: L, x2: R - 4, y1: Y, y2: Y, stroke: "var(--blue)", "stroke-width": 1.6 }));
   lines.append(sv("path", { d: `M${R - 10} ${Y - 5} L${R} ${Y} L${R - 10} ${Y + 5}`, fill: "none", stroke: "var(--blue)", "stroke-width": 1.6 }));
 
@@ -576,9 +621,9 @@ function draw(r) {
 
   { /* 招標整段畫成一個框 */
     const x0 = X(r.t1a.s), x1 = X(add(r.t6.e, 1)), months = Math.round(diff(r.t1a.s, r.t6.e) / 30.4 * 10) / 10;
-    boxes.append(sv("rect", { x: x0, y: Y - 10, width: x1 - x0, height: 20, rx: 2, fill: "var(--amber-bg)", stroke: "var(--amber)", "stroke-width": 1.2, "stroke-dasharray": "3 2", "data-go": "sec-tender", tabindex: 0, role: "button", "aria-label": "招標：跳到說明" }));
+    boxes.append(sv("rect", { x: x0, y: Y - 10, width: x1 - x0, height: 20, rx: 2, fill: "var(--teal-bg)", stroke: "var(--amber)", "stroke-width": 1.4, "stroke-dasharray": "3 2", "data-go": "sec-tender", tabindex: 0, role: "button", "aria-label": "招標：跳到說明" }));
     const t = "招標 " + months + " 個月";
-    if (tw(t) < x1 - x0 - 6) boxes.append(sv("text", { x: (x0 + x1) / 2, y: Y + 4, "text-anchor": "middle", "font-size": 11, fill: "var(--blue)" }, t));
+    if (tw(t) < x1 - x0 - 6) boxes.append(sv("text", { x: (x0 + x1) / 2, y: Y + 4, "text-anchor": "middle", "font-size": 11, fill: "var(--teal)" }, t));
     co.add(x0 + 10, Y - 10, "招標（含一評、二評） " + rng(r.t1a.s, r.t6.e), "var(--amber)", 400, "sec-tender");
   }
   STEPS.forEach((x, i) => {
@@ -586,9 +631,11 @@ function draw(r) {
     const q = r[x.id], x0 = X(q.s), x1 = Math.max(X(add(q.e, 1)), x0 + 2);
     if (q.s >= V1 || q.skipped) return;
     const aiTag = "", aiCol = c => x.src === "ai" ? "var(--amber)" : c;
+    const agency = x.tender || x.acc || x.id === "rfp" || x.id === "visit";   /* 本院做的 */
+    const who = agency ? "teal" : "blue";
     const cx = (x0 + Math.min(x1, R)) / 2;
     if (x.ms) {
-      marks.append(sv("path", { d: `M${x0} ${Y - 18} L${x0 + 6} ${Y - 10} L${x0 - 6} ${Y - 10} Z`, fill: "var(--blue)", "data-go": "row-" + x.id }));
+      marks.append(sv("path", { d: `M${x0} ${Y - 18} L${x0 + 6} ${Y - 10} L${x0 - 6} ${Y - 10} Z`, fill: "var(--" + who + ")", "data-go": "row-" + x.id }));
       co.add(x0, Y - 18, x.short + " " + roc(q.s) + aiTag, aiCol("var(--ink)"), 700, "row-" + x.id);
       return;
     }
@@ -598,18 +645,30 @@ function draw(r) {
       co.add(cx, Y - 24, (x.short || x.name) + " " + rng(q.s, q.e), "var(--blue)", 400, "row-" + x.id);
       return;
     }
-    if (x.style) { /* 3 款風格：主線上方的細條 */
+    /* 和其他步驟同一天開始的 3 款風格（舊版）才畫成上方細條；新版它就在主線上 */
+    const parallelPeer = STEPS.some(z => !z.sec && z !== x && !z.style && !z.tender && r[z.id] && +r[z.id].s === +q.s);
+    if (x.style && parallelPeer) { /* 3 款風格：主線上方的細條 */
       boxes.append(sv("rect", { x: x0, y: Y - 17, width: x1 - x0, height: 4, rx: 1, fill: "var(--blue)", opacity: .55, "data-go": "row-" + x.id }));
       co.add(cx, Y - 17, "3款風格 " + rng(q.s, q.e), "var(--blue)", 400, "row-" + x.id);
       return;
     }
-    const acc = !!x.acc;
+    const acc = !!x.acc, est = x.src === "ai";
     boxes.append(sv("rect", { x: x0, y: Y - 10, width: x1 - x0, height: 20, rx: 2, "data-go": "row-" + x.id, tabindex: 0, role: "button", "aria-label": x.name + "：跳到說明",
-      fill: x.src === "ai" ? "var(--amber-bg)" : acc ? "var(--surface)" : "var(--blue-bg)", stroke: x.src === "ai" ? "var(--amber)" : "var(--blue)", "stroke-width": 1.2, "stroke-dasharray": acc || x.src === "ai" ? "3 2" : "none" }));
-    const lab = x.short || "";
-    if (lab && tw(lab) < x1 - x0 - 6) boxes.append(sv("text", { x: (x0 + x1) / 2, y: Y + 4, "text-anchor": "middle", "font-size": 11, fill: "var(--blue)" }, lab));
-    const nm = acc ? x.name : (x.short || x.name).replace(/（.*?）/g, "");
-    co.add(cx, Y - 10, nm + " " + rng(q.s, q.e) + aiTag, aiCol(acc ? "var(--ink-soft)" : "var(--blue)"), 400, "row-" + x.id);
+      fill: "var(--" + who + "-bg)", stroke: est ? "var(--amber)" : "var(--" + who + ")", "stroke-width": est ? 1.4 : 1.2, "stroke-dasharray": est ? "3 2" : "none" }));
+    const lab = x.chartLabel || x.short || "";
+    if (lab && tw(lab) < x1 - x0 - 6) boxes.append(sv("text", { x: (x0 + x1) / 2, y: Y + 4, "text-anchor": "middle", "font-size": 11, fill: "var(--" + who + ")" }, lab));
+    const nm = acc ? x.name : x.chartName || (x.short || x.name).replace(/（.*?）/g, "");
+    co.add(cx, Y - 10, nm + " " + rng(q.s, q.e) + aiTag, aiCol("var(--" + who + ")"), 400, "row-" + x.id);
+    /* 同時進行的細項（展開時才畫）：需求書沒分天數，用估計的顏色 */
+    if (x.parts && st.g.subs === "on") {
+      const span = diff(q.s, q.e) + 1;
+      x.parts.forEach((pt, k) => {
+        const ps = add(q.s, Math.round(pt.a * span)), pe = add(q.s, Math.max(Math.round(pt.b * span) - 1, Math.round(pt.a * span)));
+        const px0 = X(ps), px1 = Math.max(X(add(pe, 1)), px0 + 3), py = Y - 17 - k * 7;
+        boxes.append(sv("rect", { x: px0, y: py, width: px1 - px0, height: 5, rx: 1, fill: "var(--blue-bg)", stroke: "var(--amber)", "stroke-width": 1, "stroke-dasharray": "2 1.5", "data-go": "row-" + x.id }));
+        co.add((px0 + px1) / 2, py, pt.name + " " + rng(ps, pe), "var(--amber)", 400, "row-" + x.id);
+      });
+    }
   });
   co.draw();
 
@@ -628,7 +687,7 @@ function draw(r) {
 
   /* 目標上線線與緩衝括號 */
   const xt = X(r.target), xl = X(r.launch);
-  lines.append(sv("line", { x1: xt, x2: xt, y1: 44, y2: YC + 20, stroke: "var(--red)", "stroke-width": 1.4, "stroke-dasharray": "5 4" }));
+  lines.append(sv("line", { x1: xt, x2: xt, y1: 44, y2: AX, stroke: "var(--red)", "stroke-width": 1.4, "stroke-dasharray": "5 4" }));
   labels.append(sv("text", { x: xt + 4, y: 54, "font-size": 11.5, fill: "var(--red)", "font-weight": 700 }, "目標上線 " + roc(r.target)));
   const yb = Y + 88, a = Math.min(xt, xl), b = Math.max(xt, xl);
   if (Math.abs(r.gap) > 0) {
@@ -639,7 +698,7 @@ function draw(r) {
   }
 
   /* 主視覺線 */
-  labels.append(sv("text", { x: L, y: YC - 26, "font-size": 17, "font-weight": 700, fill: "var(--violet)" }, "主視覺案（CIS）"));
+  labels.append(sv("text", { x: L, y: YC - 26, "font-size": 17, "font-weight": 700, fill: "var(--violet)" }, "② 主視覺案（CIS）"));
   lines.append(sv("line", { x1: X(r.cisAward), x2: X(add(r.cisFinal, 1)), y1: YC, y2: YC, stroke: "var(--violet)", "stroke-width": 1.4 }));
   const cco = makeCallouts(YC - 34, 17);
   const cbox = (s, e, t) => {
@@ -666,6 +725,38 @@ function draw(r) {
   if (r.cisWait) dep(r.cisProvide, r.s1a.s, true, true);
   else dep(r.cisBasic, r.s1a.s, r.cisBasic <= r.s1a.s);
   dep(r.cisFinal, r.s2.s, r.cisFinal <= r.s2.s);
+
+  /* ③ 本院準備：內容準備（估計）＋上線前要先做的事（最晚完成日，前面的細條是估計的前置時間） */
+  if (SHOW_PREP) {
+  labels.append(sv("text", { x: L, y: Y3 - 76, "font-size": 17, "font-weight": 700, fill: "var(--teal)" }, "③ 本院準備"));
+  lines.append(sv("line", { x1: L, x2: R - 4, y1: Y3, y2: Y3, stroke: "var(--teal)", "stroke-width": 1.2, opacity: .7 }));
+  const pco = makeCallouts(Y3 - 20, 17);
+  const prow = [];   /* 細條分列，避免重疊 */
+  const placeBar = (a, b) => { let k = prow.findIndex(e => e < a); if (k < 0) { k = prow.length; prow.push(0); } prow[k] = b + 6; return k; };
+  { /* 內容準備：決標後到初步架構上線測試前，日期未定，用估計的顏色 */
+    const cs = add(r.award, 1), ce = add(r.s2.s, -1);
+    if (cs < ce && cs < V1) {
+      const a = X(cs), b = X(add(ce, 1)), k = placeBar(a, b), y = Y3 + 8 + k * 9;
+      boxes.append(sv("rect", { x: a, y, width: b - a, height: 6, rx: 1, fill: "var(--teal-bg)", stroke: "var(--amber)", "stroke-width": 1, "stroke-dasharray": "3 2", "data-go": "prow-content" }));
+      pco.add(a + 8, Y3, "內容準備（文字、照片授權、英文、影片） " + rng(cs, ce), "var(--amber)", 400, "prow-content");
+    }
+  }
+  const leadDays = t => { const m = String(t).match(/(\d+)\s*週/); return m ? +m[1] * 7 : 0; };
+  const groups = {};
+  PREP.forEach(pi => { if (pi.id === "content") return; const [d] = pi.by(r); (groups[iso(d)] = groups[iso(d)] || []).push(pi); });
+  Object.keys(groups).sort().forEach(k => {
+    const d = D(k); if (d > V1) return;
+    const items = groups[k], x = X(d), go = "prow-" + items[0].id;
+    const ld = Math.max(...items.map(pi => leadDays(pi.lead)));
+    if (ld) {
+      const a = X(add(d, -ld)), kk = placeBar(a, x), y = Y3 + 8 + kk * 9;
+      boxes.append(sv("rect", { x: a, y, width: x - a, height: 6, rx: 1, fill: "var(--teal-bg)", stroke: "var(--amber)", "stroke-width": 1, "stroke-dasharray": "3 2", "data-go": go }));
+    }
+    marks.append(sv("path", { d: `M${x} ${Y3 - 7} L${x + 7} ${Y3} L${x} ${Y3 + 7} L${x - 7} ${Y3} Z`, fill: prepDone[items[0].id] ? "var(--surface)" : "var(--teal)", stroke: "var(--teal)", "stroke-width": 1.2, "data-go": go }));
+    pco.add(x, Y3 - 7, items.map(pi => pi.short).join("、") + " " + roc(d), "var(--teal)", 400, go);
+  });
+  pco.draw();
+  }
 
   /* 今天 */
   const xn = X(D(TODAY));
@@ -748,7 +839,11 @@ function evaluateV2(r) {
   const specD = sumDays(chain.filter(z => z.src === "spec"));
   const agD = sumDays(chain.filter(z => z.src !== "spec"));
   const pct = total > 0 ? Math.round(agD / total * 100) : 0;
-  const kick = STEPS.find(z => z.id === "s1a"), q1 = kick && r.s1a;
+  const isV3 = STEPS.some(z => z.id === "k1");
+  const verName = isV3 ? "10/08 版" : "10/07 v2 版";
+  const kick = STEPS.find(z => !z.sec && (z.after || "").split(",").includes((STEPS.find(y => y.award) || {}).id || "t6")), q1 = kick && r[kick.id];
+  const styleQ = r.s1a;
+  const agNames = chain.filter(z => z.src !== "spec").map(z => "「" + z.name.replace(/^本院/, "") + "」").join("");
   const kickHol = q1 ? HOLIDAYS.filter(([d]) => D(d) >= q1.s && D(d) <= q1.e).length : 0;
   let kickWork = 0; if (q1) for (let d = new Date(q1.s); d <= q1.e; d = add(d, 1)) if (isWork(d)) kickWork++;
   const stepOf = id => STEPS.find(z => !z.sec && z.id === id);
@@ -759,7 +854,7 @@ function evaluateV2(r) {
   const late = r.gap > 0;
   const li = (lv, t) => '<li><span class="lv lv-' + lv + '">' + ({ h: "高", m: "中", l: "低", g: "改善" })[lv] + '</span><span>' + t + '</span></li>';
   const H = [];
-  H.push('<div class="ev-verdict"><b>結論：</b>依 10/07 v2 版需求書的期限，加上需求書沒寫的本院作業時間（先估計），決標 ' + roc(r.award) + ' 後，#1 首發版約 <b>' + roc(r.launch) + '</b> 上線，' +
+  H.push('<div class="ev-verdict"><b>結論：</b>依 ' + verName + '需求書的期限，加上需求書沒寫的本院作業時間（先估計），決標 ' + roc(r.award) + ' 後，#1 首發版約 <b>' + roc(r.launch) + '</b> 上線，' +
     (late ? '<b style="color:var(--red)">比需求書寫的 116/5/31 晚 ' + r.gap + ' 天</b>' : '<b style="color:var(--green)">可在 116/5/31 前完成</b>') +
     '。決標到上線共約 ' + total + ' 天，其中本院作業約 ' + agD + ' 天（約 ' + pct + '%），需求書規定的廠商期限約 ' + specD + ' 天；廠商的開發時間（初步架構＋第二階段）只有約 ' + devD + ' 天。</div>');
   H.push('<div class="ev-nums">' +
@@ -769,18 +864,22 @@ function evaluateV2(r) {
     '<div class="ev-num"><span class="k">其中本院作業（估計）</span><span class="v">' + agD + ' 天・' + pct + '%</span></div>' +
     '<div class="ev-num"><span class="k">廠商開發時間</span><span class="v">' + devD + ' 天</span></div></div>');
   const T = [
-    li(late ? "h" : "l", late ? '<b>上線日期趕不上需求書寫的 116/5/31。</b>依各階段期限推算是 ' + roc(r.launch) + '，晚 ' + r.gap + ' 天；兩個日期寫在同一份需求書裡，彼此衝突。' : '<b>上線日期。</b>依各階段期限推算 ' + roc(r.launch) + ' 上線，可在 116/5/31 前完成。'),
-    li("h", '<b>本院作業時間占主線約 ' + pct + '%。</b>「確定網站風格」「工作計畫書驗收」「第一階段驗收」合計約 ' + agD + ' 天，需求書都沒有寫期限；這幾段多一天，上線就晚一天。'),
+    li(late ? (isV3 ? "m" : "h") : "l", late
+      ? (isV3 ? '<b>上線日期晚於 116/5/31。</b>依各階段期限推算是 ' + roc(r.launch) + '，晚 ' + r.gap + ' 天。需求書已加上「或與本院議定日」，不再直接衝突，但要另外議定上線日。'
+              : '<b>上線日期趕不上需求書寫的 116/5/31。</b>依各階段期限推算是 ' + roc(r.launch) + '，晚 ' + r.gap + ' 天；兩個日期寫在同一份需求書裡，彼此衝突。')
+      : '<b>上線日期。</b>依各階段期限推算 ' + roc(r.launch) + ' 上線，可在 116/5/31 前完成。'),
+    li("h", '<b>本院作業時間占主線約 ' + pct + '%。</b>' + agNames + '合計約 ' + agD + ' 天，需求書都沒有寫期限；這幾段多一天，上線就晚一天。'),
     li("h", '<b>廠商開發時間很短。</b>初步架構 ' + nS2 + ' 天＋第二階段 ' + nS3 + ' 天，共 ' + devD + ' 個日曆天內要完成全站建置、捲動敘事與互動元件、後台、資安弱點掃描與修補、操作手冊；光是弱掃、修補、複掃，通常就要 2–4 週。'),
-    li("m", '<b>啟動會議的 20 天碰上春節。</b>' + (q1 ? roc(q1.s) + '–' + roc(q1.e) + ' 之間有 ' + kickHol + ' 天國定假日，實際上班日約 ' + kickWork + ' 天' : '') + '，要完成成立專案小組、需求訪談、3 款網站風格和初期簡報。'),
-    li(r.cisFinal <= r.s2.s ? "m" : "h", '<b>主視覺的銜接。</b>3 款網站風格（' + (q1 ? roc(q1.s) + '–' + roc(q1.e) : '') + '）時主視覺只有基本設計；初步架構要「與主視覺結合」，推算 ' + roc(r.s2.s) + ' 開始，CIS 定稿 ' + roc(r.cisFinal) + (r.cisFinal <= r.s2.s ? '，時間剛好接上，沒有緩衝。' : '，<b style="color:var(--red)">開始時 CIS 還沒定稿</b>。') + '主視覺案結案後，到 #F Final 版（' + roc(r.anniv) + '）新增頁面與活動視覺由誰設計，也沒有著落。'),
+    li(isV3 ? "h" : "m", '<b>' + (kick ? kick.name.replace(/^第一階段：/, "") : "啟動會議") + '的 ' + (kick ? N(kick) : "") + ' 天碰上春節。</b>' + (q1 ? roc(q1.s) + '–' + roc(q1.e) + ' 之間有 ' + kickHol + ' 天國定假日，實際上班日約 ' + kickWork + ' 天' : '') +
+      (isV3 ? '，要成立專案小組、開完需求訪談會議並交訪談報告。' : '，要完成成立專案小組、需求訪談、3 款網站風格和初期簡報。')),
+    li(r.cisFinal <= r.s2.s ? "m" : "h", '<b>主視覺的銜接。</b>3 款網站風格（' + (styleQ ? roc(styleQ.s) + '–' + roc(styleQ.e) : '') + '）時主視覺只有基本設計；初步架構要「與主視覺結合」，推算 ' + roc(r.s2.s) + ' 開始，CIS 定稿 ' + roc(r.cisFinal) + (r.cisFinal <= r.s2.s ? '，時間剛好接上，沒有緩衝。' : '，<b style="color:var(--red)">開始時 CIS 還沒定稿</b>。') + '主視覺案結案後，到 #F Final 版（' + roc(r.anniv) + '）新增頁面與活動視覺由誰設計，也沒有著落。'),
     li("m", '<b>招標段約 ' + Math.round(diff(r.t1a.s, r.award) / 30.4 * 10) / 10 + ' 個月、橫跨年底。</b>二評 ' + roc(r.e2.s) + '、決標 ' + roc(r.award) + '，緊接春節；若投標未達 3 家要重新公告，約再多 2–3 週。'),
   ];
   const S = [
     li("h", '<b>預算金額還是空白。</b>「本案預算金額新臺幣＿＿萬元整」。'),
-    li("m", '<b>階段編號沿用舊版。</b>第一階段交付「第二階段工作報告書」、第二階段交付「第三階段工作報告書」，是四階段版本留下來的寫法。'),
+    li("m", '<b>階段編號沿用舊版。</b>八、履約期限開頭寫「共分為四階段」，表格只有三階段；第一階段交付「第二階段工作報告書」、第二階段交付「第三階段工作報告書」，都是四階段版本留下來的寫法。'),
     li("m", '<b>「主視覺」用詞不一致。</b>四(三)寫「3 種不同風格主視覺設計」，第一階段寫「3 款網站風格設計」，也和主視覺案的範圍重疊。'),
-    li("m", '<b>本院作業與驗收期限沒寫。</b>「確定網站風格」要多久、工作計畫書與各階段驗收多久完成都沒有規定（政府採購法施行細則第 94 條：無初驗者，原則於接獲通知後 30 日內驗收，契約可另訂）。'),
+    li("m", '<b>本院作業與驗收期限沒寫。</b>' + (isV3 ? '「需求訪談會議核定」、' : '') + '「確定網站風格」要多久、工作計畫書與各階段驗收多久完成都沒有規定（政府採購法施行細則第 94 條：無初驗者，原則於接獲通知後 30 日內驗收，契約可另訂）。'),
     li("m", '<b>第三階段「功能增修」範圍沒有定義。</b>' + roc(s4s) + ' 到 ' + roc(end) + ' 約 ' + mo(s4s, end) + ' 個月、付款 40%，增修包含哪些（新增頁面、改版次數、互動設計）沒寫。'),
     li("m", '<b>無障礙標章什麼時候取得沒寫。</b>五(二)要求取得無障礙標章，但各階段交付都沒列，第三階段結案才交無障礙測試通過報告；首發版上線時是否已取得不明確。'),
     li("l", '<b>轉靜態網頁沒有排進階段。</b>五(八)要求系列活動結束後轉為靜態網頁，但不在任何階段的交付項目裡。'),
@@ -791,7 +890,8 @@ function evaluateV2(r) {
     li("g", '大事記年代改成「自 17 年起至 117 年」（舊版寫到 118 年）。'),
     li("g", '第二階段寫明「116 年 5 月 31 日前正式上線」，上線年份不再模糊。'),
     li("g", '期限全部改用日曆天、付款改為 20／40／40，比舊版的工作天與四階段單純。'),
-    li("g", '需求訪談併入專案啟動會議（v2），第一階段的交付比較集中。'),
+    isV3 ? li("g", '啟動會議改成「專案啟動暨需求訪談會議」並交訪談報告，3 款風格改到提案簡報，第一階段的順序比較清楚。') : li("g", '需求訪談併入專案啟動會議（v2），第一階段的交付比較集中。'),
+    isV3 ? li("g", '上線日加上「或與本院議定日」，推算日晚於 5/31 時不再直接衝突；工作計畫書縮短為 7 天。') : "",
     li("g", '禮品改為「簡介與訂購資訊」，不再像要做線上訂購。'),
   ];
   H.push('<div class="ev-groups"><section><h3>時程可行性</h3><ul>' + T.join("") + '</ul></section>' +
@@ -801,31 +901,29 @@ function evaluateV2(r) {
 }
 /* 上線前本院要先準備的事：最晚完成日依時程主線推算 */
 const PREP = [
-  { id: "host", name: "決定主機：雲端（廠商提供）或院內地端", by: r => [r.e1.s, "一評（審定招標文件）"],
+  { id: "host", basis: "需求書第七章標題「(資服:待討論要雲端主機或是本地)」", short: "主機定案", name: "決定主機：雲端（廠商提供）或院內地端", by: r => [r.e1.s, "一評（審定招標文件）"],
     lead: "2–4 週", why: "需求書第七章標題還寫「待討論要雲端主機或是本地」；主機方式影響資安條文、報價和招標文件，一評前要定案。若用院內地端，虛擬主機、防火牆、WAF 要在測試區上線前備妥。" },
-  { id: "level", name: "資通系統列冊、確認防護需求等級", by: r => [r.t3.s, "上網公告"],
+  { id: "level", basis: "需求書六(五)1（■普□中□高，招標時載明）", short: "防護等級", name: "資通系統列冊、確認防護需求等級", by: r => [r.t3.s, "上網公告"],
     lead: "1–2 週", why: "防護需求等級要在招標時載明（需求書目前勾「普」），新網站也要列入本院資通系統清冊。" },
-  { id: "cloud", name: "雲端帳號、CDN／WAF 的歸屬與費用", by: r => [r.t3.s, "上網公告"],
-    lead: "1–2 週", why: "帳號登記在誰名下、費用由誰付、結案時如何移交，要寫進招標文件。" },
-  { id: "budget", name: "預算金額與年度", by: r => [r.t3.s, "上網公告"],
+  { id: "budget", basis: "需求書二（預算金額空白）", short: "預算", name: "預算金額與年度", by: r => [r.t3.s, "上網公告"],
     lead: "1–2 週", why: "需求書預算還是空白；決標在 116 年，若 116 年度預算未完成法定程序，招標文件要載明保留條款。" },
-  { id: "domain", name: "網址（網域名稱）：決定名稱、簽公文到一層核定、請資服處設定 DNS", by: r => [r.s2.s, "初步架構上線測試"],
+  { id: "domain", basis: "你提出（一層網域要簽公文到一層）", short: "網域", name: "網址（網域名稱）：決定名稱、簽公文到一層核定、請資服處設定 DNS", by: r => [r.s2.s, "初步架構上線測試"],
     lead: "2–4 週", why: "一層網域要簽公文到一層；測試區上線時就需要網址（正式網址最晚在 #1 首發版上線前生效）。" },
-  { id: "cis", name: "主視覺基本設計（Logo、標準色、標準字）提供給網站廠商", by: r => [r.s1a.s, "第一階段開始"],
+  { id: "cis", basis: "需求書第一階段：提供至少 3 款網站風格設計", short: "主視覺基本設計", name: "主視覺基本設計（Logo、標準色、標準字）提供給網站廠商", by: r => [r.s1a.s, "第一階段開始"],
     lead: "—", why: "3 款網站風格要依主視覺基本設計提出；要和主視覺案確認交付日期。" },
-  { id: "content", name: "首發版內容：文字、照片與授權、英文翻譯、形象影片", by: r => [r.s2.s, "初步架構上線測試"],
+  { id: "content", basis: "推論：需求書四(一)網站內容，首發頁面需要內容", short: "首發內容", name: "首發版內容：文字、照片與授權、英文翻譯、形象影片", by: r => [r.s2.s, "初步架構上線測試"],
     lead: "依內容量", why: "初步架構要上線測試，首頁與首發頁面的內容要先就位；上線前完成中英文。" },
-  { id: "ssl", name: "HTTPS 憑證（TLS 1.2 以上）", by: r => [r.s3.s, "第二階段開始"],
+  { id: "ssl", basis: "需求書六(五)3：HTTPS、TLS 1.2 以上", short: "憑證", name: "HTTPS 憑證（TLS 1.2 以上）", by: r => [r.s3.s, "第二階段開始"],
     lead: "1–2 週", why: "網域確定後才能申請；第二階段上線前要裝好。" },
-  { id: "scan", name: "黑白箱掃描：確認由誰掃、使用本院建議工具、預約掃描時段", by: r => [r.s3.s, "第二階段開始"],
+  { id: "scan", basis: "需求書六(五)8、第七章：黑白箱檢測、本院建議工具", short: "黑白箱掃描", name: "黑白箱掃描：確認由誰掃、使用本院建議工具、預約掃描時段", by: r => [r.s3.s, "第二階段開始"],
     lead: "2–4 週", why: "首掃、修補、複掃要在第二階段（" + "21 個日曆天" + "）內完成，掃描時段要先排好；前二級弱點要修補完成。" },
-  { id: "a11y", name: "無障礙檢測與標章申請", by: r => [r.launch, "#1 首發版上線"],
+  { id: "a11y", basis: "需求書五(二)：AA 級並取得無障礙標章", short: "無障礙標章", name: "無障礙檢測與標章申請", by: r => [r.launch, "#1 首發版上線"],
     lead: "2–4 週", why: "需求書要求符合 AA 並取得無障礙標章，但沒寫哪個階段取得；檢測、修正、審查都要時間。" },
-  { id: "policy", name: "網站必要頁面：隱私權政策、資訊安全政策、聯絡資訊、流量統計與 Cookie 告知", by: r => [r.launch, "#1 首發版上線"],
+  { id: "policy", basis: "推論：一般政府網站上線慣例，需求書沒寫", short: "必要頁面", name: "網站必要頁面：隱私權政策、資訊安全政策、聯絡資訊、流量統計與 Cookie 告知", by: r => [r.launch, "#1 首發版上線"],
     lead: "1–2 週", why: "上線前要放上；若有表單蒐集個資，另要個資告知。" },
-  { id: "golive", name: "上線前資安檢核（需求書六(七)）", by: r => [r.launch, "#1 首發版上線"],
+  { id: "golive", basis: "需求書六(七)：系統上線前務必確認事項", short: "上線前資安檢核", name: "上線前資安檢核（需求書六(七)）", by: r => [r.launch, "#1 首發版上線"],
     lead: "1 週", why: "連線來源控管、安全性更新、GCB、弱點修補完成後才上線。" },
-  { id: "static", name: "轉靜態網頁後的存放主機", by: r => [r.s4 && r.s4.e ? r.s4.e : D("2028-12-31"), "契約結束"],
+  { id: "static", basis: "需求書五(八)：轉為靜態網頁", short: "靜態存放主機", name: "轉靜態網頁後的存放主機", by: r => [r.s4 && r.s4.e ? r.s4.e : D("2028-12-31"), "契約結束"],
     lead: "—", why: "系列活動結束後網站要轉靜態網頁交給本院，院內要準備放置的空間與網址。" },
 ];
 const PKEY = "centennial-web-prep";
@@ -834,18 +932,18 @@ try { prepDone = JSON.parse(localStorage.getItem(PKEY) || "{}") || {}; } catch (
 function renderPrep(r) {
   const today = D(TODAY);
   const rows = PREP.map(x => { const [d, ms] = x.by(r); return Object.assign({ d, ms }, x); }).sort((a, b) => a.d - b.d);
-  let h = '<thead><tr><th>完成</th><th>要先做的事</th><th>最晚完成</th><th>對應時程</th><th>前置時間</th><th>說明</th></tr></thead><tbody>';
+  let h = '<thead><tr><th>完成</th><th>要先做的事</th><th>最晚完成</th><th>對應時程</th><th>前置時間</th><th>依據</th><th>說明</th></tr></thead><tbody>';
   rows.forEach(x => {
     const done = !!prepDone[x.id], soon = diff(today, x.d) < 60;
-    h += '<tr' + (done ? ' class="done"' : '') + '><td><input type="checkbox" id="prep-' + x.id + '" data-prep="' + x.id + '"' + (done ? ' checked' : '') + ' aria-label="' + x.name + ' 已完成"></td>' +
+    h += '<tr id="prow-' + x.id + '"' + (done ? ' class="done"' : '') + '><td><input type="checkbox" id="prep-' + x.id + '" data-prep="' + x.id + '"' + (done ? ' checked' : '') + ' aria-label="' + x.name + ' 已完成"></td>' +
       '<td><label for="prep-' + x.id + '">' + x.name + '</label></td><td class="dt' + (soon && !done ? ' soon' : '') + '">' + rocW(x.d) + '</td><td>' + x.ms + '</td>' +
-      '<td class="lead">' + x.lead + '</td><td class="why">' + x.why + '</td></tr>';
+      '<td class="lead">' + x.lead + '</td><td class="basis' + (/^推論|^你提出/.test(x.basis) ? ' inf' : '') + '">' + (x.basis || '') + '</td><td class="why">' + x.why + '</td></tr>';
   });
   document.getElementById("prepTable").innerHTML = h + '</tbody>';
 }
 function issues(r) {
-  const isV2 = !XL && st.ver === "v1007b";
-  document.getElementById("issuesTitle").textContent = isV2 ? "整體評估（115/10/07 v2 版需求書）" : "可能的問題";
+  const isV2 = !XL && (st.ver === "v1007b" || st.ver === "v1008");
+  document.getElementById("issuesTitle").textContent = isV2 ? "整體評估（" + VERSIONS[st.ver].label.replace(/（.*?）/g, "") + "）" : "可能的問題";
   document.getElementById("evalBody").innerHTML = isV2 ? evaluateV2(r) : "";
   document.getElementById("issuesList").hidden = isV2;
   if (isV2) return;
@@ -888,7 +986,7 @@ function notes(r) {
     '<b>不需要定稿，但需要「基本設計」。</b>網站第一階段的 3 款風格是版面與調性提案（版型、色調、字級、動態感），需要的是主視覺已經選定的 Logo、標準色、標準字，不是完整的 CIS 手冊。',
     r.cisWait
       ? '目前設定<b>需等待主視覺完成</b>：主視覺 ' + roc(r.cisProvide) + ' 完成後，整個第一階段（啟動會議、3 款風格、工作計畫書）<b>' + roc(r.s1a.s) + ' 才開始</b>，決標到第一階段之間空等約 ' + Math.max(0, diff(r.award, r.s1a.s)) + ' 天。需求書的第一階段期限要改成「自本院提供主視覺次日起」計算。'
-      : '目前設定<b>不需等待</b>：網站第一階段 <b>' + roc(r.s1a.s) + ' 開始</b>，主視覺基本設計約 <b>' + roc(r.cisBasic) + '</b> 完成（決標後 2 個月）' + (okBasic ? '，<b>時間接得上</b>。' : '，<b style="color:var(--red)">比網站第一階段晚</b>，3 款風格只能先用暫定色調，或改成「需等待」。'),
+      : '目前設定<b>不需等待</b>：3 款網站風格 <b>' + roc(r.s1a.s) + ' 開始</b>，主視覺基本設計約 <b>' + roc(r.cisBasic) + '</b> 完成（決標後 2 個月）' + (okBasic ? '，<b>時間接得上</b>。' : '，<b style="color:var(--red)">比網站第一階段晚</b>，3 款風格只能先用暫定色調，或改成「需等待」。'),
     'CIS 定稿 ' + roc(r.cisFinal) + '，「' + stepName("s2") + '」' + roc(r.s2.s) + ' 開始' + (okFinal ? '，可以直接套用定稿。' : '，<b style="color:var(--red)">開始時 CIS 還沒定稿</b>。'),
     '建議需求書把「3 款主視覺設計」改寫成「依本院百年視覺識別（另案）基本設計，提出 3 款網站版面風格」，並加一句「本院 CIS 定稿後，廠商應無償套用調整」。',
   ].map(t => "<li>" + t + "</li>").join("");
@@ -904,7 +1002,7 @@ function notes(r) {
 /* ============ 整體 ============ */
 function render() {
   const r = compute();
-  ["view", "target", "cisAward", "cisFinal", "zoom"].forEach(k => { document.getElementById("g-" + k).value = st.g[k]; });
+  ["view", "target", "cisAward", "cisFinal", "zoom", "subs"].forEach(k => { document.getElementById("g-" + k).value = st.g[k]; });
   document.getElementById("w-no").checked = !r.cisWait;
   document.getElementById("w-yes").checked = r.cisWait;
   const pv = document.getElementById("g-cisProvide");
@@ -921,7 +1019,7 @@ document.addEventListener("change", e => {
   if (t.dataset.prep) {
     prepDone[t.dataset.prep] = t.checked;
     try { localStorage.setItem(PKEY, JSON.stringify(prepDone)); } catch (e) {}
-    t.closest("tr").classList.toggle("done", t.checked); return;
+    t.closest("tr").classList.toggle("done", t.checked); draw(compute()); return;
   }
   if (t.id === "verSel") {
     st.ver = t.value; st.s = st.sv[st.ver] = st.sv[st.ver] || {};
@@ -980,6 +1078,8 @@ document.getElementById("chart").addEventListener("mouseover", e => { const g = 
 document.getElementById("chart").addEventListener("mouseleave", () => setHl(null));
 document.getElementById("tbl").addEventListener("mouseover", e => { const tr = e.target.closest('tr[id^="row-"]'); setHl(tr ? tr.id : null); });
 document.getElementById("tbl").addEventListener("mouseleave", () => setHl(null));
+document.getElementById("prepTable").addEventListener("mouseover", e => { const tr = e.target.closest('tr[id^="prow-"]'); setHl(tr ? tr.id : null); });
+document.getElementById("prepTable").addEventListener("mouseleave", () => setHl(null));
 /* 按住拖曳左右移動 */
 let drag = null, dragMoved = false;
 const board = document.getElementById("board");
