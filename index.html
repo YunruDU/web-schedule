@@ -335,6 +335,7 @@
 const SHEET_URL = "https://docs.google.com/spreadsheets/d/1H_r4b1oOqLzeAINeOauve8w-fc15eZLMZSLem6LP998/edit";
 /* 網頁修改要存回試算表：填入 Apps Script「網頁應用程式」網址（https://script.google.com/macros/s/.../exec）。
    空白＝網頁只能看，要改請到試算表。 */
+const EDIT_NEEDS_PASSWORD = false;   /* true＝網頁修改前要輸入編輯密碼（Apps Script 也要設 EDIT_PASSWORD） */
 const SHEET_WRITE_URL = "https://script.google.com/macros/s/AKfycbwyavWwZ0lNZH6uZ950IoxznwwYmBypoTFLZDa34jtnyybVh_OVPsPBJ4H9p21ni8jtvA/exec";
 
 /* ============ 預設資料（可在頁面上改） ============ */
@@ -1290,12 +1291,12 @@ async function loadSheet(quiet) {
     document.body.classList.remove("sheet-wait");
     sheetMsg("");
     document.getElementById("sheetReload").hidden = false;
-    if (SHEET_WRITE_URL) {
+    if (SHEET_WRITE_URL && EDIT_NEEDS_PASSWORD) {
       document.getElementById("pwdBox").hidden = false;
       try { const pw = localStorage.getItem(PWKEY); if (pw && !document.getElementById("editPwd").value) document.getElementById("editPwd").value = pw; } catch (e) {}
     }
     document.querySelector("header .sub").textContent = "從需求說明書、招標到 #F Final 版的網站案時程，並對照主視覺案。資料來自 Google 共編試算表" +
-      (SHEET_WRITE_URL ? "；在網頁或試算表上修改都會存回試算表（網頁修改要先輸入編輯密碼）" : "，要修改請到試算表") + "；每次修改都會記在下方的「異動紀錄」。";
+      (SHEET_WRITE_URL ? "；在網頁或試算表上修改都會存回試算表" + (EDIT_NEEDS_PASSWORD ? "（網頁修改要先輸入編輯密碼）" : "") : "，要修改請到試算表") + "；每次修改都會記在下方的「異動紀錄」。";
     render(); showSource();
   } catch (e) {
     document.body.classList.remove("sheet-wait"); document.body.classList.add("sheet-fail");
@@ -1359,14 +1360,14 @@ function saveMsg(text, cls) { const el = document.getElementById("saveMsg"); el.
 let saving = false;
 async function saveToSheet(changes) {
   const pwd = document.getElementById("editPwd").value.trim();
-  if (!pwd) { saveMsg("請先在上方輸入編輯密碼，再修改。", "err"); render(); document.getElementById("editPwd").focus(); return; }
+  if (EDIT_NEEDS_PASSWORD && !pwd) { saveMsg("請先在上方輸入編輯密碼，再修改。", "err"); render(); document.getElementById("editPwd").focus(); return; }
   if (saving) { saveMsg("上一筆還在儲存，請稍等再改。", "err"); render(); return; }
   saving = true; saveMsg("儲存到試算表中…", "busy");
   try {
     const res = await fetch(SHEET_WRITE_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ pwd, changes }) });
     const ans = await res.json();
     if (!ans.ok) throw new Error(ans.error || "儲存失敗");
-    try { localStorage.setItem(PWKEY, pwd); } catch (e) {}
+    if (EDIT_NEEDS_PASSWORD) { try { localStorage.setItem(PWKEY, pwd); } catch (e) {} }
     const now = new Date();
     saveMsg("已存回試算表（" + pad(now.getHours()) + ":" + pad(now.getMinutes()) + "）", "ok");
     await loadSheet(true);
