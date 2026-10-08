@@ -406,7 +406,7 @@ const PERF_V3 = [
   { sec: "三、網站履約（10/08 版：三階段，期限皆為日曆天）", key: "build" },
   { id: "k1", name: "第一階段：專案啟動暨需求訪談會議", short: "啟動・訪談", n: 10, unit: "cd", after: "t6", note: "需求書：決標翌日起 10 個日曆天內",
     desc: "成立專案小組，召開 1 場專案啟動暨需求訪談會議，並交付需求訪談報告。" },
-  { id: "c1", name: "核定需求訪談", short: "核定", n: 7, unit: "cd", after: "k1", acc: true, note: "需求書沒有寫，先估 7 個日曆天；不需要可把天數改成 0",
+  { id: "c1", name: "核定需求訪談", short: "核定", n: 2, unit: "cd", after: "k1", acc: true, note: "需求書沒有寫，先估 2 個日曆天（依 115/10/08 同事提供的時程）；不需要可把天數改成 0",
     desc: "本院核定需求訪談會議（訪談報告）；提案簡報從核定後起算。" },
   { id: "s1a", name: "第一階段：提案簡報・3 款網站風格", short: "提案簡報", n: 14, unit: "cd", after: "c1", style: true, note: "需求書：需求訪談會議核定後 14 個日曆天內",
     chartLabel: "提案簡報", chartName: "提案簡報・3 款網站風格",
@@ -419,7 +419,7 @@ const PERF_V3 = [
     desc: "本院審查工作計畫書，提修正意見，確認後才進入初步架構。" },
   { id: "s2", name: "第一階段：網站初步架構完成並上線測試（與主視覺結合）", short: "初步架構", n: 20, unit: "cd", after: "p1", note: "需求書：工作計畫書驗收後翌日起 20 個日曆天內",
     desc: "完成網站初步架構與功能並與主視覺結合，在測試區上線測試；交工作報告書。" },
-  { id: "a1", name: "第一階段驗收", short: "驗收", n: 30, unit: "cd", after: "s2", acc: true, note: "需求書沒有寫；本院設定驗收抓 30 天",
+  { id: "a1", name: "第一階段驗收", short: "驗收", n: 20, unit: "cd", after: "s2", acc: true, note: "需求書沒有寫；本院設定驗收抓 20 天（依 115/10/08 同事提供的時程）",
     desc: "本院驗收第一階段（啟動暨需求訪談、提案簡報與 3 款風格、工作計畫書、初步架構），合格後付款 20%。" },
   { id: "s3", name: "第二階段：#1 首發版正式上線", short: "第二階段", n: 20, unit: "cd", after: "a1", launch: true, note: "需求書：第一階段驗收後翌日起 20 個日曆天內；另寫明 116/5/31（或與本院議定日）前正式上線",
     desc: "網站建置完成並正式上線，完成資安弱點掃描與修補，交付操作手冊與工作報告書。" },
@@ -483,7 +483,8 @@ const KEY = "centennial-web-cp-v1";
 let st = {};
 try { st = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { st = {}; }
 st.g = Object.assign({}, DEF, st.g || {});
-if (!VERSIONS[st.ver] || !st.seenV3) { st.ver = "v1008"; st.seenV2 = st.seenV3 = true; }   /* 第一次開新版時切到最新版 */
+if (!VERSIONS[st.ver] || !st.seenV3) { st.ver = "v1008"; st.seenV2 = st.seenV3 = true; }
+if (!st.seenV3b) { if (st.sv) st.sv.v1008 = {}; st.seenV3b = true; }   /* 10/08 同事時程成為預設：清掉舊的 10/08 網頁修改一次 */   /* 第一次開新版時切到最新版 */
 if (!st.sv) st.sv = { v1002: st.s || {} };   /* 舊資料當作舊版的修改 */
 st.s = st.sv[st.ver] = st.sv[st.ver] || {};
 STEPS = VERSIONS[st.ver].steps;
