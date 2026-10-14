@@ -821,7 +821,14 @@ function draw(r) {
   cbox(add(r.cisAward, 1), r.cisBasic, "基本設計");
   cbox(add(r.cisBasic, 1), r.cisFinal, "應用設計");
   cco.draw();
-  const cflag = (d, t) => { const x = X(d); marks.append(sv("path", { d: `M${x} ${YC + 12} L${x + 6} ${YC + 22} L${x - 6} ${YC + 22} Z`, fill: "none", stroke: "var(--violet)", "stroke-width": 1.4 })); labels.append(sv("text", { x: x - tw(t) / 2, y: YC + 37, "font-size": 11, fill: "var(--violet)" }, t)); };
+  const cPlaced = [];   /* 已放的標籤位置：日期太近時往下一行放，避免文字重疊 */
+  const cflag = (d, t) => {
+    const x = X(d), w = tw(t) * 11 / 12, x0 = x - w / 2, x1 = x + w / 2;
+    let row = 0; while (cPlaced.some(p => p.row === row && x0 < p.x1 + 6 && x1 > p.x0 - 6)) row++;
+    cPlaced.push({ x0, x1, row });
+    marks.append(sv("path", { d: `M${x} ${YC + 12} L${x + 6} ${YC + 22} L${x - 6} ${YC + 22} Z`, fill: "none", stroke: "var(--violet)", "stroke-width": 1.4 }));
+    labels.append(sv("text", { x: x0, y: YC + 37 + row * 17, "font-size": 11, fill: "var(--violet)" }, t));
+  };
   cflag(r.cisAward, "決標 " + roc(r.cisAward));
   cflag(r.cisBasic, "Logo・標準色 " + roc(r.cisBasic));
   cflag(r.cisFinal, "CIS 定稿 " + roc(r.cisFinal));
