@@ -138,6 +138,7 @@
   .lv-m { background: var(--amber-bg); color: var(--amber); }
   .lv-l { background: var(--rule-soft); color: var(--ink-soft); }
   .lv-g { background: var(--rule-soft); color: var(--green); }
+  .lv-s { background: var(--blue-bg); color: var(--blue); }
   .prep { display: flex; flex-direction: column; gap: .4rem; }
   .prep h2 { font-size: 1rem; margin: 0; }
   .prep .hint { margin: 0; }
@@ -214,7 +215,8 @@
     <label class="field" for="verSel"><b>需求書版本</b>
       <select id="verSel">
         <option value="sheet" id="optSheet">Google 共編試算表</option>
-        <option value="v1013pm">115/10/13 下午版（最新）</option>
+        <option value="v1014am">115/10/14 上午版（最新）</option>
+        <option value="v1013pm">115/10/13 下午版</option>
         <option value="v1013am">115/10/13 上午版</option>
         <option value="v1012pm">115/10/12 下午版</option>
         <option value="v1008pm">115/10/08 下午版</option>
@@ -288,6 +290,7 @@
     <label class="field" for="g-cisAward">主視覺決標日 <input type="date" id="g-cisAward" class="set"></label>
     <label class="field" for="g-cisBasic">主視覺基本設計完成 <input type="date" id="g-cisBasic" class="set"></label>
     <label class="field" for="g-cisFinal">CIS 定稿日（應用設計完成） <input type="date" id="g-cisFinal" class="set"></label>
+    <span class="hint" id="cisSrc" aria-live="polite"></span>
     <button class="btn" id="reset" type="button">還原預設</button>
     <span class="hint">在網頁上改的數字只存在你自己的瀏覽器，不會寫回 Excel；要讓大家都看到，請改共用的 Excel。</span>
   </div>
@@ -343,6 +346,11 @@ const SHEET_URL = "https://docs.google.com/spreadsheets/d/1H_r4b1oOqLzeAINeOauve
    空白＝網頁只能看，要改請到試算表。 */
 const EDIT_NEEDS_PASSWORD = false;   /* true＝網頁修改前要輸入編輯密碼（Apps Script 也要設 EDIT_PASSWORD） */
 const SHEET_WRITE_URL = "https://script.google.com/macros/s/AKfycbwyavWwZ0lNZH6uZ950IoxznwwYmBypoTFLZDa34jtnyybVh_OVPsPBJ4H9p21ni8jtvA/exec";
+
+/* ============ 主視覺甘特圖 ============
+   開網頁時先讀這份試算表的主視覺時程（決標、基本系統設計、應用系統設計），再畫圖；空白＝用「設定」的日期。
+   需「知道連結的使用者可以檢視」。依項目名稱找列：含「決標」「基本系統設計」「應用系統設計」。 */
+const CIS_URL = "https://docs.google.com/spreadsheets/d/1mc7VghOe4sezLnW9PrhhhGA1_IdbqwMa/edit?gid=166077781";
 
 /* ============ 預設資料（可在頁面上改） ============ */
 const DEF = { view: "all", target: "2027-05-31", cisAward: "2026-12-17", cisBasic: "2027-02-24", cisFinal: "2027-03-31", anniv: "2028-06-09", cisWait: "no", cisProvide: "", zoom: "1.5", subs: "off" };
@@ -510,13 +518,21 @@ const PERF_V7 = PERF_V6.map(x => {
   if (y.id === "s4") y.desc = "完整網站擴充功能建置完成、上線運作及維護；技術支援、弱點更新、定期備份。交結案驗收報告書（項目同上線驗收；白箱、黑箱交檢測結果，無障礙需取得標章）、典藏版靜態網頁（規格依五(九)6）與全案結案報告書。#F 前完成 Final 版，結案付款 40%。";
   return y;
 });
+/* 115/10/14 上午版需求書：時程同 10/13 下午版；第一階段改交「專案啟動暨需求訪談會議紀錄」 */
+const PERF_V8 = PERF_V7.map(x => {
+  if (x.sec) return { sec: "三、網站履約（10/14 上午版：三階段，期限皆為日曆天）", key: "build" };
+  const y = Object.assign({}, x);
+  if (y.id === "k1") y.desc = "成立專案小組，召開 1 場專案啟動暨需求訪談會議（含基本及擴充功能排程），並交付專案啟動暨需求訪談會議紀錄。";
+  return y;
+});
 /* 時間來源：spec＝需求書寫的、set＝本院（使用者）設定的、ai＝需求書沒寫、先估計的 */
 const SRC_TENDER = { rfp: "set", visit: "set", t1a: "ai", t1b: "ai", t1c: "ai", t1d: "ai", e1: "ai", t2: "ai", t3: "set", t4: "ai", t5: "ai", t6: "ai" };
 TENDER.forEach(x => { if (!x.sec) x.src = SRC_TENDER[x.id] || "ai"; });
 PERF_OLD.forEach(x => { if (!x.sec) x.src = x.acc ? "set" : "spec"; });
-[PERF_NEW, PERF_V2, PERF_V3, PERF_V4, PERF_V5, PERF_V6, PERF_V7].forEach(arr => arr.forEach(x => { if (!x.sec) x.src = ({ c1: "ai", d1: "ai", p1: "ai", a1: "set", a3: "set" })[x.id] || "spec"; }));
+[PERF_NEW, PERF_V2, PERF_V3, PERF_V4, PERF_V5, PERF_V6, PERF_V7, PERF_V8].forEach(arr => arr.forEach(x => { if (!x.sec) x.src = ({ c1: "ai", d1: "ai", p1: "ai", a1: "set", a3: "set" })[x.id] || "spec"; }));
 const SRC_LABEL = { spec: "需求書", set: "本院設定", ai: "估計" };
 const VERSIONS = {
+  v1014am: { label: "115/10/14 上午版需求書（三階段）", steps: TENDER.concat(PERF_V8) },
   v1013pm: { label: "115/10/13 下午版需求書（三階段）", steps: TENDER.concat(PERF_V7) },
   v1013am: { label: "115/10/13 上午版需求書（三階段）", steps: TENDER.concat(PERF_V6) },
   v1012pm: { label: "115/10/12 下午版需求書（三階段）", steps: TENDER.concat(PERF_V5) },
@@ -526,7 +542,7 @@ const VERSIONS = {
   v1007: { label: "115/10/07 版需求書（三階段）", steps: TENDER.concat(PERF_NEW) },
   v1002: { label: "115/10/02 舊版（四階段）", steps: TENDER.concat(PERF_OLD) },
 };
-let STEPS = VERSIONS.v1013pm.steps;
+let STEPS = VERSIONS.v1014am.steps;
 
 let HOLIDAYS = [
   ["2026-09-25", "中秋節"], ["2026-09-28", "教師節"], ["2026-10-09", "國慶日補假"], ["2026-10-26", "光復節補假"], ["2026-12-25", "行憲紀念日"],
@@ -570,7 +586,7 @@ let st = {};
 try { st = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { st = {}; }
 st.g = Object.assign({}, DEF, st.g || {});
 if (!st.seenCis1217) { Object.assign(st.g, { cisAward: DEF.cisAward, cisBasic: DEF.cisBasic, cisFinal: DEF.cisFinal }); st.seenCis1217 = true; }   /* 主視覺改為 115/12/17 決標：套用一次新的預設 */
-if (!VERSIONS[st.ver] || !st.seenV7) { st.ver = "v1013pm"; st.seenV2 = st.seenV3 = st.seenV4 = st.seenV5 = st.seenV6 = st.seenV7 = true; }   /* 第一次開新版時切到最新版 */
+if (!VERSIONS[st.ver] || !st.seenV8) { st.ver = "v1014am"; st.seenV2 = st.seenV3 = st.seenV4 = st.seenV5 = st.seenV6 = st.seenV7 = st.seenV8 = true; }   /* 第一次開新版時切到最新版 */
 if (!st.seenV3b) { if (st.sv) st.sv.v1008 = {}; st.seenV3b = true; }   /* 10/08 同事時程成為預設：清掉舊的 10/08 網頁修改一次 */   /* 第一次開新版時切到最新版 */
 if (!st.sv) st.sv = { v1002: st.s || {} };   /* 舊資料當作舊版的修改 */
 st.s = st.sv[st.ver] = st.sv[st.ver] || {};
@@ -591,10 +607,10 @@ const pinE = x => ov(x.id).end !== undefined ? ov(x.id).end : (x.end || null);
 /* ============ 計算 ============ */
 function compute() {
   const r = {}; let prev = null;
-  r.cisAward = D(st.g.cisAward);
-  r.cisBasic = st.g.cisBasic ? D(st.g.cisBasic) : (() => { const d = new Date(r.cisAward); d.setMonth(d.getMonth() + 2); return d; })();   /* 基本設計完成日；沒填＝決標後 2 個月 */
+  r.cisAward = D(cisG("cisAward"));
+  r.cisBasic = cisG("cisBasic") ? D(cisG("cisBasic")) : (() => { const d = new Date(r.cisAward); d.setMonth(d.getMonth() + 2); return d; })();   /* 基本設計完成日；沒填＝決標後 2 個月 */
   r.cisWait = st.g.cisWait === "yes";
-  r.cisProvide = st.g.cisProvide ? D(st.g.cisProvide) : D(st.g.cisFinal);
+  r.cisProvide = st.g.cisProvide ? D(st.g.cisProvide) : D(cisG("cisFinal"));
   const awardStep = STEPS.find(z => z.award), awardId = awardStep ? awardStep.id : "t6";
   STEPS.forEach(x => {
     if (x.sec) return;
@@ -631,7 +647,7 @@ function compute() {
   r.launch = r.s3.e;
   r.target = D(st.g.target);
   r.gap = diff(r.target, r.launch);       /* 正＝落後天數 */
-  r.cisFinal = D(st.g.cisFinal);
+  r.cisFinal = D(cisG("cisFinal"));
   r.anniv = D(DEF.anniv);
   return r;
 }
@@ -792,7 +808,8 @@ function draw(r) {
 
   /* 主視覺線 */
   labels.append(sv("text", { x: L, y: YC - 26, "font-size": 17, "font-weight": 700, fill: "var(--violet)" }, "② 主視覺案（CIS）"));
-  lines.append(sv("line", { x1: X(r.cisAward), x2: X(add(r.cisFinal, 1)), y1: YC, y2: YC, stroke: "var(--violet)", "stroke-width": 1.4 }));
+  const cisT0 = cisOK() && CIS.tenderStart ? D(CIS.tenderStart) : null;
+  lines.append(sv("line", { x1: X(cisT0 || r.cisAward), x2: X(add(r.cisFinal, 1)), y1: YC, y2: YC, stroke: "var(--violet)", "stroke-width": 1.4 }));
   const cco = makeCallouts(YC - 34, 17);
   const cbox = (s, e, t) => {
     const x0 = X(s), x1 = X(add(e, 1));
@@ -800,6 +817,7 @@ function draw(r) {
     if (tw(t) < x1 - x0 - 6) boxes.append(sv("text", { x: (x0 + x1) / 2, y: YC + 4, "text-anchor": "middle", "font-size": 11, fill: "var(--violet)" }, t));
     cco.add((x0 + x1) / 2, YC - 10, t + " " + rng(s, e), "var(--violet)", 400, "cis-notes");
   };
+  if (cisT0 && cisT0 < r.cisAward) cbox(cisT0, r.cisAward, "招標");
   cbox(add(r.cisAward, 1), r.cisBasic, "基本設計");
   cbox(add(r.cisBasic, 1), r.cisFinal, "應用設計");
   cco.draw();
@@ -938,7 +956,8 @@ function evaluateV2(r) {
   const isV5 = isV4 && /擴充/.test((STEPS.find(z => !z.sec && z.id === "s4") || {}).name || "");   /* 10/12 下午版：第三階段改為功能擴充、118/1/31 */
   const isV6 = isV5 && /壓力/.test((STEPS.find(z => !z.sec && z.id === "s3") || {}).desc || "");   /* 10/13 上午版：驗收報告書清單、壓力測試 */
   const isV7 = isV6 && /五\(九\)6/.test((STEPS.find(z => !z.sec && z.id === "s4") || {}).desc || "");   /* 10/13 下午版：典藏版依五(九)6、刪除罰則 */
-  const verName = isV7 ? "10/13 下午版" : isV6 ? "10/13 上午版" : isV5 ? "10/12 下午版" : isV4 ? "10/08 下午版" : isV3 ? "10/08 上午版" : "10/07 v2 版";
+  const isV8 = isV7 && /會議紀錄/.test((STEPS.find(z => !z.sec && z.id === "k1") || {}).desc || "");   /* 10/14 上午版：第一階段交會議紀錄 */
+  const verName = isV8 ? "10/14 上午版" : isV7 ? "10/13 下午版" : isV6 ? "10/13 上午版" : isV5 ? "10/12 下午版" : isV4 ? "10/08 下午版" : isV3 ? "10/08 上午版" : "10/07 v2 版";
   const kick = STEPS.find(z => !z.sec && (z.after || "").split(",").includes((STEPS.find(y => y.award) || {}).id || "t6")), q1 = kick && r[kick.id];
   const styleQ = r.s1a;
   const agNames = chain.filter(z => z.src !== "spec").map(z => "「" + z.name.replace(/^本院/, "") + "」").join("");
@@ -950,7 +969,7 @@ function evaluateV2(r) {
   const end = r.s4 && r.s4.e ? r.s4.e : D("2028-12-31");
   const s4s = r.s4 && r.s4.s ? r.s4.s : r.launch;
   const late = r.gap > 0;
-  const li = (lv, t) => '<li><span class="lv lv-' + lv + '">' + ({ h: "高", m: "中", l: "低", g: "改善" })[lv] + '</span><span>' + t + '</span></li>';
+  const li = (lv, t) => '<li><span class="lv lv-' + lv + '">' + ({ h: "高", m: "中", l: "低", g: "改善", s: "建議" })[lv] + '</span><span>' + t + '</span></li>';
   const H = [];
   H.push('<div class="ev-verdict"><b>結論：</b>依 ' + verName + '需求書的期限，加上需求書沒寫的本院作業時間（先估計），決標 ' + roc(r.award) + ' 後，#1 首發版約 <b>' + roc(r.launch) + '</b> 上線，' +
     (late ? '<b style="color:var(--red)">比需求書寫的 116/5/31 晚 ' + r.gap + ' 天</b>' : '<b style="color:var(--green)">可在 116/5/31 前完成</b>') +
@@ -976,24 +995,19 @@ function evaluateV2(r) {
     li("m", '<b>招標段約 ' + Math.round(diff(r.t1a.s, r.award) / 30.4 * 10) / 10 + ' 個月、橫跨年底。</b>二評 ' + roc(r.e2.s) + '、決標 ' + roc(r.award) + '，緊接春節；若投標未達 3 家要重新公告，約再多 2–3 週。'),
   ];
   const S = [
-    li("h", '<b>預算金額還是空白。</b>「本案預算金額新臺幣＿＿萬元整」。'),
+    li("l", '<b>訪商後要填：預算金額。</b>二、預算金額目前空白（「新臺幣＿＿萬元整」）。'),
+    isV5 ? li("h", '<b>專案期程和第三階段期限不一致。</b>三、專案期程寫「決標次日起至 117 年 12 月 31 日止」，主機也租到 117/12/31；第三階段（含典藏版、結案驗收報告書）期限卻是 118 年 1 月 31 日前。118 年 1 月主機已經到期，兩者要統一成同一天。') : "",
     isV5 ? "" : isV4 ? li("m", '<b>「共分為四階段」沒有改。</b>八、履約期限開頭寫「共分為四階段」，表格只有三階段。')
          : li("m", '<b>階段編號沿用舊版。</b>八、履約期限開頭寫「共分為四階段」，表格只有三階段；第一階段交付「第二階段工作報告書」、第二階段交付「第三階段工作報告書」，都是四階段版本留下來的寫法。'),
-    li("m", '<b>「主視覺」用詞不一致。</b>四(三)寫「3 種不同風格主視覺設計」，第一階段寫「3 款網站風格設計」，也和主視覺案的範圍重疊。'),
-    li("m", '<b>本院作業與驗收期限沒寫。</b>' + (isV3 ? '「需求訪談會議核定」、' : '') + '「確定網站風格」要多久、工作計畫書與各階段驗收多久完成都沒有規定（政府採購法施行細則第 94 條：無初驗者，原則於接獲通知後 30 日內驗收，契約可另訂）。'),
-    isV5 ? li("m", '<b>「基本功能」「擴充功能」的分界沒寫。</b>第二階段上線「基本功能」、第三階段建置「擴充功能」（' + roc(s4s) + ' 到 ' + roc(end) + '，約 ' + mo(s4s, end) + ' 個月、付款 40%），兩者各包含哪些，要等需求訪談會議排程才確定；需求書本身沒有清單，驗收時容易各說各話。')
-         : li("m", '<b>第三階段「功能增修」範圍沒有定義。</b>' + roc(s4s) + ' 到 ' + roc(end) + ' 約 ' + mo(s4s, end) + ' 個月、付款 40%，增修包含哪些（新增頁面、改版次數、互動設計）沒寫。'),
+    isV3 ? "" : li("m", '<b>「主視覺」用詞不一致。</b>四(三)寫「3 種不同風格主視覺設計」，第一階段寫「3 款網站風格設計」，也和主視覺案的範圍重疊。'),
+    li("m", '<b>本院作業期限沒寫。</b>' + (isV3 ? '「需求訪談會議核定」、' : '') + '「確定網站風格」要多久沒有規定；各階段驗收依契約第十二條是接獲通知後 30 日內，目前時程抓第一階段驗收 ' + (stepOf("a1") ? N(stepOf("a1")) : 30) + ' 天。'),
+    isV5 ? "" : li("m", '<b>第三階段「功能增修」範圍沒有定義。</b>' + roc(s4s) + ' 到 ' + roc(end) + ' 約 ' + mo(s4s, end) + ' 個月、付款 40%，增修包含哪些（新增頁面、改版次數、互動設計）沒寫。'),
     isV6 ? "" : li("m", '<b>無障礙標章什麼時候取得沒寫。</b>五(二)要求取得無障礙標章，但各階段交付都沒列，第三階段結案才交無障礙測試通過報告；首發版上線時是否已取得不明確。'),
     isV6 ? "" : isV5 ? li("m", '<b>轉靜態網頁的交付內容還沒寫。</b>第三階段交付項目第 5 點目前是待補的問題（轉靜態網頁需要什麼資料），要補上交付格式與驗收方式。')
          : li("l", '<b>轉靜態網頁沒有排進階段。</b>五(八)要求系列活動結束後轉為靜態網頁，但不在任何階段的交付項目裡。'),
-    isV6 ? li("m", '<b>只要求檢測報告，沒有修補與複測。</b>驗收報告書的白箱、黑箱都只寫「檢測」；六(五)8 雖要求修補前二個嚴重等級的弱點，但驗收清單沒有列修補紀錄與複測結果，驗收時不好判斷是否合格。') : "",
-    isV6 ? li("m", '<b>壓力測試條件不夠完整。</b>五(八)：500 人同時上線、1 分鐘共 5,000 次請求、90% 在 5 秒內回應。只測 1 分鐘，看不出長時間負載的問題；也沒有寫錯誤率，以及要在哪個環境測（正式區或同等規格、是否含 WAF 與 CDN）。') : "",
-    isV6 ? li("m", '<b>主機方式還沒定。</b>七、標題仍是「(資服:待討論要雲端主機或是本地)」，驗收報告書也寫「[如為雲端建置…]」；主機方式會影響壓力測試條件、資安條文與報價。')
-         : li("l", '<b>主機章節還留著內部註記。</b>標題「(資服:待討論要雲端主機或是本地)」，資料所在地條文是簡寫。'),
+    isV6 ? li("l", '<b>壓力測試的寫法和實際測法對不起來。</b>五(八)寫「以 1 分鐘為測試期」，但實際用的 ab -n 5000 -c 500 是送完 5,000 次就結束，不是固定 1 分鐘；也沒寫失敗請求（Failed requests、Non-2xx）要是 0，伺服器很快回錯誤頁也會被算進「5 秒內回應」。') : "",
+    li("l", '<b>訪商後要定：主機用雲端或本地。</b>七、標題仍寫「(資服:待討論要雲端主機或是本地)」' + (isV6 ? '，第二、三階段的驗收報告書也還有「[如為雲端建置…]」' : '') + '，定案後一起改。'),
     isV6 && !isV7 ? li("l", '<b>典藏版交付對不上。</b>第三階段寫「典藏版靜態網頁原始碼」，五(九)6 則列了 4 項交付（網站檔案、典藏說明文件、檢測報告、圖片影音原始檔與授權資料）。') : "",
-    isV7 ? li("m", '<b>十一、罰則整段刪除。</b>原本的「內容製作逾期每日計罰 1‰」和「交付文件不實得終止契約」都拿掉了；故障排除 4 小時、弱點修補 3 個工作天逾時也沒有罰則，要確認契約書本身是否另有罰則。另外沒有著作權歸屬條款。')
-    : isV6 ? li("l", '<b>故障排除改為 4 小時，但逾時沒有罰則。</b>五(六)自「本院通知後」起算、不分輕重，罰則只有內容製作逾期；另外沒有著作權歸屬條款。')
-         : li("l", '<b>沒有著作權、原始碼歸屬條款；罰則只有內容製作逾期</b>，沒有上線逾期或故障排除逾時的罰則。'),
   ];
   const G = [
     li("g", '大事記年代改成「自 17 年起至 117 年」（舊版寫到 118 年）。'),
@@ -1009,8 +1023,14 @@ function evaluateV2(r) {
     isV5 ? li("g", '「共分為三階段」已改正；需求訪談會議要排定基本與擴充功能，第二階段做基本功能、第三階段做擴充功能，第三階段期限明訂為 118/1/31。') : "",
     li("g", '禮品改為「簡介與訂購資訊」，不再像要做線上訂購。'),
   ];
+  /* 契約書（罰則、著作權寫在契約書）：參考 115 年院區開放採購契約書 */
+  const C = [
+    li("s", '<b>故障排除要用「小時」計，不要用「工作小時」。</b>需求書五(六)寫本院通知後 4 小時內排除，但院區開放契約第十五條是「每逾 4 <b>工作</b>小時計 1 點」。工作小時不算晚上和假日，週五晚上故障要到週一上班才開始計罰；院慶活動常在週末，可能整個週末都罰不到。本案契約改為「每逾 4 小時計 1 點」，至少院慶活動期間要這樣。'),
+    li("s", '<b>著作權要勾到「本院取得著作財產權」。</b>院區開放契約第十六條勾 A（廠商為著作人、本院取得授權），授權只有重製、公開展示、改作、編輯，<b>沒有勾【6】公開傳輸權</b>，而網站放上網就是公開傳輸。院慶網站是客製化、要長期典藏，之後也可能換廠商維護，契約範本的註也寫客製化著作「建議約定由機關享有著作財產權」：本案改勾 C 或 H，至少補勾【6】公開傳輸權與 G（可轉授權他人）。'),
+  ];
   H.push('<div class="ev-groups"><section><h3>時程可行性</h3><ul>' + T.join("") + '</ul></section>' +
     '<section><h3>需求書內容</h3><ul>' + S.join("") + '</ul></section>' +
+    '<section><h3>契約書建議事項</h3><ul>' + C.join("") + '</ul></section>' +
     '<section><h3>比 10/02 舊版改善的地方</h3><ul>' + G.join("") + '</ul></section></div>');
   return H.join("");
 }
@@ -1057,7 +1077,7 @@ function renderPrep(r) {
   document.getElementById("prepTable").innerHTML = h + '</tbody>';
 }
 function issues(r) {
-  const isV2 = SHEET_MODE ? STEPS.some(z => z.id === "k1" || z.id === "d1") : !XL && (st.ver === "v1007b" || st.ver === "v1008" || st.ver === "v1008pm" || st.ver === "v1012pm" || st.ver === "v1013am" || st.ver === "v1013pm");
+  const isV2 = SHEET_MODE ? STEPS.some(z => z.id === "k1" || z.id === "d1") : !XL && (st.ver === "v1007b" || st.ver === "v1008" || st.ver === "v1008pm" || st.ver === "v1012pm" || st.ver === "v1013am" || st.ver === "v1013pm" || st.ver === "v1014am");
   document.getElementById("issuesTitle").textContent = isV2 ? "整體評估（" + (SHEET_MODE ? curTab().label : VERSIONS[st.ver].label).replace(/（.*?）/g, "") + "）" : "可能的問題";
   document.getElementById("evalBody").innerHTML = isV2 ? evaluateV2(r) : "";
   document.getElementById("issuesList").hidden = isV2;
@@ -1098,13 +1118,15 @@ function notes(r) {
   const okBasic = r.cisBasic <= r.s1a.s, okFinal = r.cisFinal <= r.s2.s;
   r.a1 = r.a1 || r.s1a;
   document.getElementById("cisNote").innerHTML = [
+    cisOK() ? '<b>主視覺時程讀自「主視覺甘特圖」</b>（' + CIS.at + ' 讀取）：' + CIS.items.map(it => it.name.replace(/^\d+\.\s*/, "") + ' ' + (it.start && it.start !== it.end ? roc(D(it.start)) + '–' + roc(D(it.end)) : roc(D(it.end)))).join('、') + '。要調整主視覺日期，請改主視覺甘特圖。'
+      : CIS && CIS.err ? '<b style="color:var(--red)">主視覺甘特圖讀不到</b>（' + CIS.err + '），主視覺日期暫用上方設定的日期。' : "",
     '<b>不需要定稿，但需要「基本設計」。</b>網站第一階段的 3 款風格是版面與調性提案（版型、色調、字級、動態感），需要的是主視覺已經選定的 Logo、標準色、標準字，不是完整的 CIS 手冊。',
     r.cisWait
       ? '目前設定<b>需等待主視覺完成</b>：主視覺 ' + roc(r.cisProvide) + ' 完成後，整個第一階段（啟動會議、3 款風格、工作計畫書）<b>' + roc(r.s1a.s) + ' 才開始</b>，決標到第一階段之間空等約 ' + Math.max(0, diff(r.award, r.s1a.s)) + ' 天。需求書的第一階段期限要改成「自本院提供主視覺次日起」計算。'
       : '目前設定<b>不需等待</b>：3 款網站風格 <b>' + roc(r.s1a.s) + ' 開始</b>，主視覺基本設計 <b>' + roc(r.cisBasic) + '</b> 完成（' + roc(add(r.cisAward, 1)) + '–' + roc(r.cisBasic) + '）' + (okBasic ? '，<b>時間接得上</b>。' : '，<b style="color:var(--red)">比網站第一階段晚</b>，3 款風格只能先用暫定色調，或改成「需等待」。'),
     'CIS 定稿 ' + roc(r.cisFinal) + '，「' + stepName(STEPS.some(z => z.id === "s2") ? "s2" : "s3") + '」' + roc(r.s2.s) + ' 開始' + (okFinal ? '，可以直接套用定稿。' : '，<b style="color:var(--red)">開始時 CIS 還沒定稿</b>。'),
     '建議需求書把「3 款主視覺設計」改寫成「依本院百年視覺識別（另案）基本設計，提出 3 款網站版面風格」，並加一句「本院 CIS 定稿後，廠商應無償套用調整」。',
-  ].map(t => "<li>" + t + "</li>").join("");
+  ].filter(Boolean).map(t => "<li>" + t + "</li>").join("");
   const late = r.gap > 0;
   document.getElementById("bufNote").innerHTML = [
     late ? '<b>目前沒有 buffer，反而落後 ' + r.gap + ' 天。</b>本院的審查與驗收（' + agencyDays(r).n + ' 次，合計約 ' + agencyDays(r).days + ' 天）都在時程主線上。' : '<b>目前有 ' + (-r.gap) + ' 天 buffer。</b>',
@@ -1126,7 +1148,7 @@ function render() {
   document.getElementById("waitHint").textContent = r.cisWait
     ? "決標 " + roc(r.award) + " 後，要等到 " + roc(r.cisProvide) + " 主視覺完成才進入第一階段（空等約 " + Math.max(0, diff(r.award, r.s1a.s)) + " 天）。需求書第一階段期限要改寫成「自本院提供主視覺次日起 15／30 工作天」。"
     : "決標後就進入第一階段；3 款風格用主視覺當時已有的基本設計（Logo、標準色）提案，CIS 定稿後再套用。";
-  draw(r); table(r); chips(r); notes(r); issues(r); renderPrep(r); renderChanges(); lockEdits();
+  draw(r); table(r); chips(r); notes(r); issues(r); renderPrep(r); renderChanges(); lockEdits(); lockCis();
 }
 const refocus = id => { const n = document.getElementById(id); if (n) n.focus({ preventScroll: true }); };
 document.addEventListener("change", e => {
@@ -1372,6 +1394,52 @@ document.addEventListener("dragleave", e => { if (!e.relatedTarget) document.bod
 document.addEventListener("drop", e => { e.preventDefault(); document.body.classList.remove("drag"); loadFile(e.dataTransfer.files[0]); });
 if (!SHEET_URL) { try { const saved = JSON.parse(localStorage.getItem(XKEY) || "null"); if (saved && saved.data) { applyData(saved.data, saved.meta); st.s = st.sv.xl = st.sv.xl || {}; } } catch (e) {} }
 
+/* ============ 主視覺甘特圖：讀取 ============ */
+let CIS = null, cisReady = null;   /* CIS：{ award, basic, final, tenderStart, items, at } 或 { err } */
+const cisOK = () => !!(CIS && !CIS.err);
+function cisG(k) {   /* 主視覺日期：讀得到甘特圖就用甘特圖，否則用設定 */
+  const m = { cisAward: "award", cisBasic: "basic", cisFinal: "final" };
+  return (cisOK() && CIS[m[k]]) || st.g[k];
+}
+async function loadCis() {
+  if (!CIS_URL) { CIS = null; return; }
+  try {
+    if (typeof XLSX === "undefined") throw new Error("讀取 Excel 的元件沒有載入");
+    const u = sheetExportUrl(CIS_URL);
+    const res = await fetch(u + (u.includes("?") ? "&" : "?") + "t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("試算表回應 " + res.status);
+    const wb = XLSX.read(new Uint8Array(await res.arrayBuffer()), { type: "array" });
+    let rows = null, h = -1;
+    for (const n of wb.SheetNames) {
+      const rr = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: "" });
+      const i = rr.findIndex(row => row.some(v => /項目名稱/.test(txt(v))));
+      if (i >= 0) { rows = rr; h = i; break; }
+    }
+    if (!rows) throw new Error("找不到「項目名稱」欄");
+    const hdr = rows[h].map(txt), col = re => hdr.findIndex(v => re.test(v));
+    const cN = col(/項目名稱/), cS = col(/起始/), cE = col(/完成/);
+    if (cE < 0) throw new Error("找不到「預計完成日」欄");
+    const items = rows.slice(h + 1).map(row => ({ name: txt(row[cN]), start: cS >= 0 ? toIsoDate(row[cS]) : null, end: toIsoDate(row[cE]) }))
+      .filter(it => it.name && it.end);
+    const find = re => items.find(it => re.test(it.name));
+    const award = find(/決標/), basic = find(/基本系統設計/), fin = find(/應用系統設計/) || find(/結案/);
+    if (!award || !basic || !fin) throw new Error("找不到決標、基本系統設計或應用系統設計的列");
+    const now = new Date();
+    CIS = { award: award.end, basic: basic.end, final: fin.end, tenderStart: (items.find(it => it.start) || {}).start || null, items,
+      at: roc(now) + " " + pad(now.getHours()) + ":" + pad(now.getMinutes()) };
+  } catch (e) { CIS = { err: e.message || String(e) }; }
+}
+/* 主視覺日期來自甘特圖時，上方三個日期改成唯讀 */
+function lockCis() {
+  const el = document.getElementById("cisSrc");
+  el.textContent = cisOK() ? "主視覺日期讀自主視覺甘特圖（" + CIS.at + "）" : CIS && CIS.err ? "主視覺甘特圖讀不到，暫用這裡的日期" : "";
+  el.style.color = CIS && CIS.err ? "var(--red)" : "";
+  if (!cisOK()) return;
+  [["g-cisAward", CIS.award], ["g-cisBasic", CIS.basic], ["g-cisFinal", CIS.final]].forEach(([id, v]) => {
+    const i = document.getElementById(id); i.value = v; i.disabled = true; i.title = "讀自主視覺甘特圖；要調整請改主視覺甘特圖";
+  });
+}
+
 /* ============ 共編試算表：讀取、唯讀、異動紀錄 ============ */
 let SHEET_MODE = false, CHG = {}, CHGLOG = [];
 let VIEW_SHEET = !!SHEET_URL;   /* 下拉選單選的是試算表（每次開網頁都先看試算表） */
@@ -1426,6 +1494,7 @@ async function loadSheet(quiet) {
     const res = await fetch(sheetExportUrl(SHEET_URL) + (sheetExportUrl(SHEET_URL).includes("?") ? "&" : "?") + "t=" + Date.now(), { cache: "no-store" });
     if (!res.ok) throw new Error("試算表回應 " + res.status);
     const book = parseSheetBook(XLSX.read(new Uint8Array(await res.arrayBuffer()), { type: "array" }));
+    await (cisReady = cisReady || loadCis());
     if (!VIEW_SHEET) return;   /* 讀取中已切到內建版本 */
     const now = new Date(), at = roc(now) + " " + pad(now.getHours()) + ":" + pad(now.getMinutes());
     SHEET_TABS = book.tabs; BAD_TABS = book.bad;
@@ -1452,7 +1521,7 @@ async function loadSheet(quiet) {
     document.body.classList.remove("sheet-wait"); document.body.classList.add("sheet-fail");
     sheetMsg('<b>目前讀不到共編試算表，時程先不顯示。</b><span>可能是網路問題，或試算表的共用／發布設定被關掉了。（' + (e.message || e) + '）</span>' +
       '<button class="btn" type="button" id="sheetRetry">重新讀取</button>' +
-      '<button class="btn" type="button" id="sheetToBuiltin">改看內建 115/10/13 下午版</button>', true);
+      '<button class="btn" type="button" id="sheetToBuiltin">改看內建 115/10/14 上午版</button>', true);
   }
 }
 /* 每一步、每個欄位：最早的「原本的值」與最新的「改成」 */
@@ -1534,8 +1603,8 @@ async function saveToSheet(changes) {
 }
 document.addEventListener("click", e => {
   const t = e.target.closest("button"); if (!t) return;
-  if (t.id === "sheetRetry" || t.id === "sheetReload") loadSheet();
-  if (t.id === "sheetToBuiltin") { VIEW_SHEET = false; leaveSheet(); st.ver = "v1013pm"; st.s = st.sv.v1013pm = st.sv.v1013pm || {}; STEPS = VERSIONS.v1013pm.steps; refs = []; save(); render(); showSource(); }
+  if (t.id === "sheetRetry" || t.id === "sheetReload") { cisReady = null; loadSheet(); }
+  if (t.id === "sheetToBuiltin") { VIEW_SHEET = false; leaveSheet(); st.ver = "v1014am"; st.s = st.sv.v1014am = st.sv.v1014am || {}; STEPS = VERSIONS.v1014am.steps; refs = []; save(); render(); showSource(); }
 });
 
 /* ============ 匯出 Excel（ExcelJS；格式與共用版範本相同，改完可以再載入） ============ */
@@ -1575,8 +1644,8 @@ const HELP = [
   ["在「網站評估時程」網頁按「載入 Excel」選這個檔案（會讀「共編版」）。要給大家一起改：在 Google 試算表選「檔案 → 匯入 → 上傳」這個檔案，選「取代試算表」。", false],
 ];
 /* 匯出哪些版本：共編模式＝試算表的各分頁；單機＝目前畫面（含網頁上改過的）當共編版，再加上各版需求書原樣 */
-const TAB_NAME = { v1013pm: "需求書1013下午", v1013am: "需求書1013上午", v1012pm: "需求書1012下午", v1008pm: "需求書1008下午", v1008: "需求書1008上午", v1007b: "需求書1007v2", v1007: "需求書1007", v1002: "需求書1002" };
-const VER_SHORT = { v1013pm: "115/10/13 下午版", v1013am: "115/10/13 上午版", v1012pm: "115/10/12 下午版", v1008pm: "115/10/08 下午版", v1008: "115/10/08 上午版", v1007b: "115/10/07 v2 版", v1007: "115/10/07 第一版", v1002: "115/10/02 舊版（四階段）" };
+const TAB_NAME = { v1014am: "需求書1014上午", v1013pm: "需求書1013下午", v1013am: "需求書1013上午", v1012pm: "需求書1012下午", v1008pm: "需求書1008下午", v1008: "需求書1008上午", v1007b: "需求書1007v2", v1007: "需求書1007", v1002: "需求書1002" };
+const VER_SHORT = { v1014am: "115/10/14 上午版", v1013pm: "115/10/13 下午版", v1013am: "115/10/13 上午版", v1012pm: "115/10/12 下午版", v1008pm: "115/10/08 下午版", v1008: "115/10/08 上午版", v1007b: "115/10/07 v2 版", v1007: "115/10/07 第一版", v1002: "115/10/02 舊版（四階段）" };
 function exportTabs() {
   if (SHEET_MODE) return SHEET_TABS.map(v => ({ tab: v.tab, label: v.label, editable: v.editable, note: v.note || "", steps: v.steps, ov: v.tab === CUR_TAB ? st.s : {} }));
   const base = XL ? "載入的 Excel" : VER_SHORT[st.ver];
@@ -1733,6 +1802,7 @@ async function exportXlsx() {
   } catch (e) { msg.textContent = "匯出失敗：" + (e.message || e); }
 }
 
+cisReady = loadCis();
 if (SHEET_URL) loadSheet();
-else { render(); showSource(); }
+else cisReady.then(() => { render(); showSource(); });
 </script>
