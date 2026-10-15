@@ -996,7 +996,7 @@ function draw(r) {
         boxes.append(sv("rect", { x: a, y: y + 1, width: b - a, height: 11, rx: 2, "data-go": go, tabindex: 0, role: "button", "aria-label": x.name + "：跳到我的流程",
           fill: col, "fill-opacity": .16, stroke: x.missing ? "var(--red)" : col, "stroke-width": 1.2 }));
         const t = sv("text", x.labLeft ? { x: a - 5, y: y + 10, "font-size": 11, fill: col, "text-anchor": "end", "data-go": go } : { x: b + 5, y: y + 10, "font-size": 11, fill: col, "data-go": go }, x.lab);
-        t.append(sv("title", {}, x.name + " " + rng(x.s, x.e)));
+        t.append(sv("title", {}, rng(x.s, x.e) + "　" + x.name));
         labels.append(t);
       }));
     });
@@ -1224,8 +1224,8 @@ let MY_ON = false;   /* 試算表「設定」的「顯示我的流程」填「�
 /* 支線顏色：依第一次出現的順序給 --lane1～6 */
 function laneIdx(my) { const m = new Map(); my.forEach(x => { if (x.nodate) return; const k = x.lane || ""; if (!m.has(k)) m.set(k, m.size); }); return m; }
 const laneCol = i => "var(--lane" + (i % 6 + 1) + ")";
-/* 圖上用的短名稱：括號裡的說明拿掉，太長就截斷（完整名稱在表格和滑鼠提示） */
-const myShort = n => { let t = String(n).replace(/\s*[（(].*$/, "").trim() || String(n); return [...t].length > 22 ? [...t].slice(0, 21).join("") + "…" : t; };
+/* 圖上用的名稱：名稱後面括號裡的說明不畫（開頭的括號保留，例如「(第一階段-審查)…」），不截斷；完整內容在表格和滑鼠提示 */
+const myShort = n => { const t = String(n).trim(), m = t.match(/^((?:\s*[（(【\[][^）)】\]]*[）)】\]])*\s*[^（(【\[]+)/); return m && m[1].trim() ? m[1].trim() : t; };
 /* 把「我的流程」依「支線」分組，每組裡互相重疊的再往下排一列；回傳每條支線的位置與總高度 */
 function myLanes(my) {
   const ROW = 18, GAP = 6, tw = t => [...t].reduce((w, c) => w + (c.charCodeAt(0) > 255 ? 11 : 6.2), 0);
@@ -1242,7 +1242,7 @@ function myLanes(my) {
     ln.rows = []; const ends = [];
     ln.items.sort((p, q) => p.s - q.s).forEach(x => {
       const a = X(x.s), b = Math.max(X(add(x.e, 1)), a + 3);
-      x.lab = myShort(x.name) + " " + (diff(x.s, x.e) ? rng(x.s, x.e) : roc(x.s));
+      x.lab = (diff(x.s, x.e) ? rng(x.s, x.e) : roc(x.s)) + "　" + myShort(x.name);   /* 日期在前，名稱長也看得到日期 */
       const w = tw(x.lab) + 10;
       x.labLeft = b + w > R && a - w > L + pad;   /* 右邊放不下就寫在左邊 */
       const from = x.labLeft ? a - w : a, to = x.labLeft ? b : b + w;
