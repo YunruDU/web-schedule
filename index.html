@@ -28,17 +28,21 @@
     --band: rgba(120, 128, 140, .12);
     --band-hol: rgba(194, 59, 46, .10);
     --font: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
+    --lane1: #c2410c; --lane2: #b4235f; --lane3: #0e7490; --lane4: #6b7f1a; --lane5: #8a5a2b; --lane6: #5b5bd6;   /* ③ 支線 */
+    --cal-off: #f8d4f3;   /* 月曆：週末與國定假日 */
   }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
     --bg: #17191c; --surface: #1f2226; --ink: #e7e9ec; --ink-soft: #adb3bd; --ink-faint: #818894;
     --rule: #383c43; --rule-soft: #2b2e33; --blue: #7fa6e0; --blue-bg: #1f2b3d; --violet: #b996d4; --violet-bg: #2c2335;
     --red: #ec8576; --red-bg: #3a2320; --green: #7cc3a0; --amber: #e2a85a; --amber-bg: #3a2c17; --teal: #6cc4b6; --teal-bg: #183230; --band: rgba(200, 205, 215, .08); --band-hol: rgba(236, 133, 118, .14);
+    --lane1: #f0955a; --lane2: #ec84b0; --lane3: #5cc6e0; --lane4: #b5c95a; --lane5: #d3a57a; --lane6: #a5a5f5; --cal-off: #45283f;
     color-scheme: dark;
   }}
   :root[data-theme="dark"] {
     --bg: #17191c; --surface: #1f2226; --ink: #e7e9ec; --ink-soft: #adb3bd; --ink-faint: #818894;
     --rule: #383c43; --rule-soft: #2b2e33; --blue: #7fa6e0; --blue-bg: #1f2b3d; --violet: #b996d4; --violet-bg: #2c2335;
     --red: #ec8576; --red-bg: #3a2320; --green: #7cc3a0; --amber: #e2a85a; --amber-bg: #3a2c17; --teal: #6cc4b6; --teal-bg: #183230; --band: rgba(200, 205, 215, .08); --band-hol: rgba(236, 133, 118, .14);
+    --lane1: #f0955a; --lane2: #ec84b0; --lane3: #5cc6e0; --lane4: #b5c95a; --lane5: #d3a57a; --lane6: #a5a5f5; --cal-off: #45283f;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -80,6 +84,31 @@
   .legend { display: flex; flex-wrap: wrap; gap: .35rem 1.2rem; font-size: .8rem; color: var(--ink-soft); }
   .legend span { display: inline-flex; align-items: center; gap: .35rem; }
   .lg { width: 1.4rem; height: .7rem; border-radius: 2px; display: inline-block; }
+  .lgd { width: .7rem; height: .7rem; border-radius: 50%; display: inline-block; vertical-align: -1px; margin-right: .3rem; }
+  /* 月曆檢視：一個月一格，週末與假日粉紅；日期下的細色條＝那天在做什麼 */
+  .calwrap { background: var(--surface); border: 1px solid var(--rule); border-radius: 4px; padding: .8rem; }
+  .cal { display: grid; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); border-top: 2px solid var(--ink); border-left: 2px solid var(--ink); }
+  .cal-m { border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); padding: .35rem .4rem .5rem; min-width: 0; }
+  .cal-m h3 { margin: 0 0 .2rem; text-align: center; font-size: 1.02rem; }
+  .cal-m h3 small { font-size: .78rem; letter-spacing: 0; color: var(--ink-faint); font-weight: 500; }
+  .cal-g { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .cal-wd { text-align: center; font-weight: 700; font-size: .8rem; padding-bottom: .15rem; }
+  .cal-d { position: relative; min-height: 3.3rem; text-align: center; font-size: .82rem; line-height: 1.25; padding-top: .15rem; font-variant-numeric: tabular-nums; }
+  .cal-d.off { background: var(--cal-off); }
+  .cal-d[data-go] { cursor: pointer; }
+  .cal-d[data-go]:hover, .cal-d[data-go]:focus-visible { outline: 2px solid var(--red); outline-offset: -2px; z-index: 1; }
+  .cal-d .n { display: inline-block; min-width: 1.45rem; border-radius: 50%; font-weight: 600; }
+  .cal-d.ms .n { box-shadow: 0 0 0 2px var(--ms, var(--red)); }
+  .cal-d.today .n { background: var(--ink); color: var(--surface); }
+  .cal-d .t { display: block; font-size: .6rem; line-height: 1.15; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-inline: 1px; }
+  .cal-d .t.m { color: var(--ms, var(--red)); font-weight: 700; }
+  .cal-d .bars { position: absolute; left: 0; right: 0; bottom: 3px; display: flex; flex-direction: column; gap: 1px; }
+  .cal-d .bars i { display: block; height: 4px; }
+  .cal-d .bars i.my { height: 3px; }
+  .cal-d .bars i.s { margin-left: 3px; border-radius: 2px 0 0 2px; }
+  .cal-d .bars i.e { margin-right: 3px; border-radius: 0 2px 2px 0; }
+  .cal-d .bars i.s.e { border-radius: 2px; }
+  .cal-legend { display: flex; flex-wrap: wrap; gap: .3rem 1rem; font-size: .8rem; color: var(--ink-soft); margin-top: .6rem; }
 
   .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
   .field { display: inline-flex; align-items: center; gap: .4rem; font-size: .86rem; color: var(--ink-soft); }
@@ -267,6 +296,12 @@
   </div>
 
   <div class="zoombar">
+    <label class="field" for="g-mode">呈現方式
+      <select id="g-mode">
+        <option value="gantt">甘特圖</option>
+        <option value="cal">月曆</option>
+      </select>
+    </label>
     <label class="field" for="g-zoom">圖寬
       <select id="g-zoom">
         <option value="1">1 倍（整張看）</option>
@@ -281,11 +316,15 @@
         <option value="on">展開</option>
       </select>
     </label>
-    <span class="hint">放大後在圖上按住滑鼠左右拖曳，或用下方捲軸移動；滑到框或文字上，對應的那一段會變紅。</span>
+    <span class="hint" id="dragHint">放大後在圖上按住滑鼠左右拖曳，或用下方捲軸移動；滑到框或文字上，對應的那一段會變紅。</span>
   </div>
   <div class="board" id="board"><svg id="chart" viewBox="0 0 1240 545" role="img" aria-label="網站評估時程圖"></svg></div>
+  <div class="calwrap" id="calWrap" hidden>
+    <div class="cal" id="cal" aria-label="網站評估時程月曆"></div>
+    <div class="cal-legend" id="calLegend"></div>
+  </div>
 
-  <div class="legend">
+  <div class="legend" id="ganttLegend">
     <span><i class="lg" style="background:var(--blue-bg);border:1.5px solid var(--blue)"></i>網站廠商做的</span>
     <span><i class="lg" style="background:var(--teal-bg);border:1.5px solid var(--teal)"></i>本院做的</span>
     <span><i class="lg" style="background:var(--violet-bg);border:1.5px solid var(--violet)"></i>主視覺案</span>
@@ -394,7 +433,7 @@ const SHEET_WRITE_URL = "https://script.google.com/macros/s/AKfycbwyavWwZ0lNZH6u
 const CIS_URL = "https://docs.google.com/spreadsheets/d/1mc7VghOe4sezLnW9PrhhhGA1_IdbqwMa/edit?gid=166077781";
 
 /* ============ 預設資料（可在頁面上改） ============ */
-const DEF = { view: "all", target: "2027-05-31", cisAward: "2026-12-17", cisBasic: "2027-02-24", cisFinal: "2027-03-31", anniv: "2028-06-09", cisWait: "no", cisProvide: "", zoom: "1.5", subs: "off" };
+const DEF = { view: "all", target: "2027-05-31", cisAward: "2026-12-17", cisBasic: "2027-02-24", cisFinal: "2027-03-31", anniv: "2028-06-09", cisWait: "no", cisProvide: "", zoom: "1.5", subs: "off", mode: "gantt" };
 /* after: 從哪一步完成的次日起算（預設是上一步）；ms: 一天的會議或里程碑 */
 const TENDER = [
   { sec: "一、需求說明書", key: "prep" },
@@ -946,17 +985,19 @@ function draw(r) {
 
   /* ③ 我的流程：每條支線一軌（像音軌），同一支線裡重疊的事往下排；名稱寫在色塊旁邊 */
   if (my.length) {
-    labels.append(sv("text", { x: L, y: Y3 - 76, "font-size": 17, "font-weight": 700, fill: "var(--teal)" }, "③ 我的流程"));
-    const top = Y3 - 52;
+    labels.append(sv("text", { x: L, y: Y3 - 76, "font-size": 17, "font-weight": 700, fill: "var(--teal)" }, "③ " + (MY_TITLE || "我的流程")));
+    const top = Y3 - 52, lix = laneIdx(my);
     myL.lanes.forEach((ln, li) => {
-      const y0 = top + ln.y, h = ln.rows.length * ROW3;
-      if (li % 2 === 0) bands.append(sv("rect", { x: L, y: y0 - 3, width: R - L, height: h + 2, fill: "var(--teal-bg)", opacity: .45 }));
-      if (ln.name) labels.append(sv("text", { x: L + 4, y: y0 + 10, "font-size": 11, "font-weight": 700, fill: "var(--teal)" }, ln.title));
+      const y0 = top + ln.y, h = ln.rows.length * ROW3, col = laneCol(lix.get(ln.name) || 0);
+      bands.append(sv("rect", { x: L, y: y0 - 3, width: R - L, height: h + 2, fill: col, opacity: li % 2 === 0 ? .07 : .03 }));
+      if (ln.name) labels.append(sv("text", { x: L + 4, y: y0 + 10, "font-size": 11, "font-weight": 700, fill: col }, ln.title));
       ln.rows.forEach((row, k) => row.forEach(x => {
         const y = y0 + k * ROW3, a = X(x.s), b = Math.max(X(add(x.e, 1)), a + 3), go = "my-" + x.k;
         boxes.append(sv("rect", { x: a, y: y + 1, width: b - a, height: 11, rx: 2, "data-go": go, tabindex: 0, role: "button", "aria-label": x.name + "：跳到我的流程",
-          fill: "var(--teal-bg)", stroke: x.missing ? "var(--red)" : "var(--teal)", "stroke-width": 1.2 }));
-        labels.append(sv("text", x.labLeft ? { x: a - 5, y: y + 10, "font-size": 11, fill: "var(--teal)", "text-anchor": "end", "data-go": go } : { x: b + 5, y: y + 10, "font-size": 11, fill: "var(--teal)", "data-go": go }, x.lab));
+          fill: col, "fill-opacity": .16, stroke: x.missing ? "var(--red)" : col, "stroke-width": 1.2 }));
+        const t = sv("text", x.labLeft ? { x: a - 5, y: y + 10, "font-size": 11, fill: col, "text-anchor": "end", "data-go": go } : { x: b + 5, y: y + 10, "font-size": 11, fill: col, "data-go": go }, x.lab);
+        t.append(sv("title", {}, x.name + " " + rng(x.s, x.e)));
+        labels.append(t);
       }));
     });
   }
@@ -1178,7 +1219,13 @@ function renderPrep(r) {
    （進階：舊的「對齊步驟ID／對齊方式／間隔天數」欄位如果還在，照樣支援。） */
 const MY_DEFAULT = [];   /* 沒有預設項目：要等使用者在試算表「我的流程」分頁填自己的流程 */
 let MYFLOW = null;   /* 試算表「我的流程」分頁的內容；null＝還沒有 */
+let MY_TITLE = "";   /* 試算表「設定」的「我的流程名稱」；空白＝「我的流程」 */
 let MY_ON = false;   /* 試算表「設定」的「顯示我的流程」填「是」才顯示（預設不顯示，方便先上架不 demo） */
+/* 支線顏色：依第一次出現的順序給 --lane1～6 */
+function laneIdx(my) { const m = new Map(); my.forEach(x => { if (x.nodate) return; const k = x.lane || ""; if (!m.has(k)) m.set(k, m.size); }); return m; }
+const laneCol = i => "var(--lane" + (i % 6 + 1) + ")";
+/* 圖上用的短名稱：括號裡的說明拿掉，太長就截斷（完整名稱在表格和滑鼠提示） */
+const myShort = n => { let t = String(n).replace(/\s*[（(].*$/, "").trim() || String(n); return [...t].length > 22 ? [...t].slice(0, 21).join("") + "…" : t; };
 /* 把「我的流程」依「支線」分組，每組裡互相重疊的再往下排一列；回傳每條支線的位置與總高度 */
 function myLanes(my) {
   const ROW = 18, GAP = 6, tw = t => [...t].reduce((w, c) => w + (c.charCodeAt(0) > 255 ? 11 : 6.2), 0);
@@ -1195,7 +1242,7 @@ function myLanes(my) {
     ln.rows = []; const ends = [];
     ln.items.sort((p, q) => p.s - q.s).forEach(x => {
       const a = X(x.s), b = Math.max(X(add(x.e, 1)), a + 3);
-      x.lab = x.name + " " + (diff(x.s, x.e) ? rng(x.s, x.e) : roc(x.s));
+      x.lab = myShort(x.name) + " " + (diff(x.s, x.e) ? rng(x.s, x.e) : roc(x.s));
       const w = tw(x.lab) + 10;
       x.labLeft = b + w > R && a - w > L + pad;   /* 右邊放不下就寫在左邊 */
       const from = x.labLeft ? a - w : a, to = x.labLeft ? b : b + w;
@@ -1231,10 +1278,69 @@ function myItems(r) {
   });
   return out;
 }
+/* ============ 月曆檢視：一個月一格，週末與國定假日粉紅；日期下的細色條＝那天在做什麼 ============
+   第 1 條＝網站案（藍＝廠商做的、綠＝本院做的），第 2 條＝主視覺案，再來是我的流程各支線。
+   有里程碑的日子把日期圈起來並寫名稱；滑鼠移上去看當天所有事，點一下跳到下方表格。 */
+function drawCal(r) {
+  const box = document.getElementById("cal");
+  const my = SHOW_PREP || !MY_ON ? [] : myItems(r).filter(x => !x.nodate), lix = laneIdx(my);
+  const items = [], ms = new Map();
+  const mark = (d, lab, col, go) => { if (!d) return; const k = iso(d); if (!ms.has(k)) ms.set(k, []); ms.get(k).push({ lab, col, go }); };
+  STEPS.forEach(x => {
+    if (x.sec) return;
+    const q = r[x.id]; if (!q || q.skipped || !q.s) return;
+    const agency = x.tender || x.acc || x.id === "rfp" || x.id === "visit";
+    items.push({ s: q.s, e: q.e, row: 0, col: agency ? "var(--teal)" : "var(--blue)", name: "網站案：" + x.name, go: "row-" + x.id });
+    if (x.ms) mark(q.s, x.short || x.name, "var(--teal)", "row-" + x.id);
+  });
+  mark(r.award, "決標", "var(--blue)", "row-t6");
+  mark(r.launch, "#1 上線", r.gap > 0 ? "var(--red)" : "var(--green)", null);
+  if (iso(r.target) !== iso(r.launch)) mark(r.target, "目標上線", "var(--red)", null);
+  mark(r.anniv, "#F Final", "var(--ink)", null);
+  const cisT0 = cisOK() && CIS.tenderStart ? D(CIS.tenderStart) : null;
+  if (cisT0 && cisT0 < r.cisAward) items.push({ s: cisT0, e: r.cisAward, row: 1, col: "var(--violet)", name: "主視覺：招標", go: "cis-notes" });
+  items.push({ s: add(r.cisAward, 1), e: r.cisBasic, row: 1, col: "var(--violet)", name: "主視覺：基本設計", go: "cis-notes" });
+  items.push({ s: add(r.cisBasic, 1), e: r.cisFinal, row: 1, col: "var(--violet)", name: "主視覺：應用設計", go: "cis-notes" });
+  mark(r.cisAward, "CIS 決標", "var(--violet)", "cis-notes");
+  mark(r.cisFinal, "CIS 定稿", "var(--violet)", "cis-notes");
+  const myName = MY_TITLE || "我的流程";
+  my.forEach(x => { const i = lix.get(x.lane || "") || 0; items.push({ s: x.s, e: x.e, row: 2 + i, col: laneCol(i), name: myName + (x.lane ? "（" + x.lane + "）" : "") + "：" + x.name, go: "my-" + x.k, my: true }); });
+  const rows = 2 + lix.size, today = iso(D(TODAY));
+  let h = "";
+  for (let m = new Date(V0.getFullYear(), V0.getMonth(), 1); m < V1; m = new Date(m.getFullYear(), m.getMonth() + 1, 1)) {
+    h += '<section class="cal-m"><h3>' + (m.getMonth() + 1) + ' 月　<small>民國 ' + (m.getFullYear() - 1911) + ' 年</small></h3><div class="cal-g">' +
+      "日一二三四五六".split("").map(w => '<div class="cal-wd">' + w + '</div>').join("") + '<div></div>'.repeat(m.getDay());
+    for (let d = new Date(m); d.getMonth() === m.getMonth(); d = add(d, 1)) {
+      const k = iso(d), hol = HOL.get(k), wk = d.getDay(), act = items.filter(it => d >= it.s && d <= it.e), mk = ms.get(k) || [];
+      let bars = "";
+      for (let row = 0; row < rows; row++) {
+        const it = act.find(a => a.row === row);
+        bars += it ? '<i class="' + (it.my ? "my " : "") + (iso(it.s) === k ? "s " : "") + (iso(it.e) === k ? "e" : "") + '" style="background:' + it.col + '"></i>' : '<i' + (row >= 2 ? ' class="my"' : '') + '></i>';
+      }
+      const go = (mk.find(x => x.go) || {}).go || (act.find(a => a.row === 0) || act[0] || {}).go;
+      const tip = [rocW(d) + (hol ? " " + hol : ""), ...mk.map(x => "◎ " + x.lab), ...act.map(a => a.name)].join("\n");
+      const lab = mk.length ? '<span class="t m">' + esc3(mk.map(x => x.lab).join("・")) + '</span>' : '<span class="t">' + esc3(hol || "") + '</span>';
+      h += '<div class="cal-d' + (wk === 0 || wk === 6 || hol ? " off" : "") + (mk.length ? " ms" : "") + (k === today ? " today" : "") + '"' + (mk.length ? ' style="--ms:' + mk[0].col + '"' : "") +
+        ' title="' + esc3(tip) + '"' + (go ? ' data-go="' + go + '" tabindex="0" role="button"' : "") + '><span class="n">' + d.getDate() + '</span>' + lab + '<span class="bars">' + bars + '</span></div>';
+    }
+    h += '</div></section>';
+  }
+  box.innerHTML = h;
+  const lg = [["var(--blue)", "網站案・廠商做的"], ["var(--teal)", "網站案・本院做的"], ["var(--violet)", "主視覺案"]]
+    .concat([...lix.keys()].map((k, i) => [laneCol(i), myName + (k ? "（" + (/^\d+$/.test(k) ? "③-" + k : k) + "）" : "")]));
+  document.getElementById("calLegend").innerHTML = lg.map(([c, t]) => '<span><i class="lg" style="background:' + c + ';height:.35rem"></i> ' + esc3(t) + '</span>').join("") +
+    '<span><i class="lg" style="background:var(--cal-off)"></i> 週末・國定假日</span><span>圈起來的日期＝里程碑</span><span>滑鼠移到日期上看當天在做什麼，點一下跳到下方表格</span>';
+}
+document.getElementById("cal").addEventListener("click", e => { const g = e.target.closest("[data-go]"); if (g) goTo(g.dataset.go); });
+document.getElementById("cal").addEventListener("keydown", e => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  const g = e.target.closest("[data-go]"); if (g) { e.preventDefault(); goTo(g.dataset.go); }
+});
 function renderMy(r) {
   const my = myItems(r), sec = document.getElementById("mySection");
   sec.hidden = !MY_ON;
   if (!MY_ON) return;
+  document.getElementById("myTitle").textContent = "③ " + (MY_TITLE || "我的流程");
   const tbl = document.getElementById("myTable");
   if (!my.length) {
     document.getElementById("myHint").textContent = "還沒有你的流程。到共編 Google 試算表新增一個分頁，名稱取「我的流程」，第一列標題依序是：支線｜項目｜開始日｜結束日｜備註。每一列是一件你要做的事；網頁重新整理後，圖上會多一軌「③ 我的流程」。";
@@ -1243,11 +1349,11 @@ function renderMy(r) {
   }
   document.getElementById("myHint").textContent = "來自共編試算表「我的流程」分頁；要修改請到那個分頁改開始日、結束日，網頁重新整理就會更新。";
   const adv = my.some(x => x.anchor || x.mode);   /* 有用到舊的「對齊」欄位才顯示那一欄 */
-  const hasLane = my.some(x => x.lane);
+  const hasLane = my.some(x => x.lane), lixT = laneIdx(my);
   let h = '<thead><tr><th>#</th>' + (hasLane ? '<th>支線</th>' : '') + '<th>我要做的事</th><th>開始</th><th>結束</th><th>天數</th>' + (adv ? '<th>對齊</th>' : '') + '<th>備註</th></tr></thead><tbody>';
   my.forEach((x, i) => {
     const how = x.start || x.end ? "指定日期" : x.anchor ? "「" + x.anchorName + "」" + (x.mode || "之後開始") + (x.gap ? "（間隔 " + x.gap + " 天）" : "") : "接在上一項之後";
-    h += '<tr id="my-' + x.k + '"><td>' + (i + 1) + '</td>' + (hasLane ? '<td>' + esc3(x.lane || "") + '</td>' : '') + '<td>' + esc3(x.name) + '</td>' +
+    h += '<tr id="my-' + x.k + '"><td>' + (i + 1) + '</td>' + (hasLane ? '<td>' + (x.nodate ? "" : '<i class="lgd" style="background:' + laneCol(lixT.get(x.lane || "") || 0) + '"></i>') + esc3(x.lane || "") + '</td>' : '') + '<td>' + esc3(x.name) + '</td>' +
       (x.nodate ? '<td class="warn" colspan="3">還沒填開始日／結束日</td>' : '<td class="dt">' + rocW(x.s) + '</td><td class="dt">' + rocW(x.e) + '</td><td>' + (diff(x.s, x.e) + 1) + '</td>') +
       (adv ? '<td' + (x.missing ? ' class="warn"' : '') + '>' + (x.missing ? "找不到步驟 ID「" + esc3(x.anchor) + "」" : how) + '</td>' : '') + '<td class="why">' + esc3(x.note || "") + '</td></tr>';
   });
@@ -1317,8 +1423,12 @@ function notes(r) {
 /* ============ 整體 ============ */
 function render() {
   const r = compute();
-  document.getElementById("g-subs").closest("label").hidden = !STEPS.some(x => !x.sec && (x.parts || x.tender));
-  ["view", "target", "cisAward", "cisBasic", "cisFinal", "zoom", "subs"].forEach(k => { document.getElementById("g-" + k).value = st.g[k]; });
+  const calMode = st.g.mode === "cal";
+  document.getElementById("g-subs").closest("label").hidden = calMode || !STEPS.some(x => !x.sec && (x.parts || x.tender));
+  document.getElementById("g-zoom").closest("label").hidden = calMode;
+  ["board", "ganttLegend", "dragHint"].forEach(id => { document.getElementById(id).hidden = calMode; });
+  document.getElementById("calWrap").hidden = !calMode;
+  ["view", "target", "cisAward", "cisBasic", "cisFinal", "zoom", "subs", "mode"].forEach(k => { document.getElementById("g-" + k).value = st.g[k]; });
   document.getElementById("w-no").checked = !r.cisWait;
   document.getElementById("w-yes").checked = r.cisWait;
   const pv = document.getElementById("g-cisProvide");
@@ -1327,7 +1437,7 @@ function render() {
   document.getElementById("waitHint").textContent = r.cisWait
     ? "決標 " + roc(r.award) + " 後，要等到 " + roc(r.cisProvide) + " 主視覺完成才進入第一階段（空等約 " + Math.max(0, diff(r.award, r.s1a.s)) + " 天）。需求書第一階段期限要改寫成「自本院提供主視覺次日起 15／30 工作天」。"
     : "決標後就進入第一階段；3 款風格用主視覺當時已有的基本設計（Logo、標準色）提案，CIS 定稿後再套用。";
-  draw(r); table(r); chips(r); notes(r); issues(r); renderPrep(r); renderMy(r); renderChanges(); lockEdits(); lockCis();
+  draw(r); if (calMode) drawCal(r); table(r); chips(r); notes(r); issues(r); renderPrep(r); renderMy(r); renderChanges(); lockEdits(); lockCis();
 }
 const refocus = id => { const n = document.getElementById(id); if (n) n.focus({ preventScroll: true }); };
 document.addEventListener("change", e => {
@@ -1385,7 +1495,7 @@ function backToChart(key) {
   }
 }
 window.addEventListener("scroll", () => {
-  const b = document.getElementById("board").getBoundingClientRect();
+  const b = document.getElementById(st.g.mode === "cal" ? "calWrap" : "board").getBoundingClientRect();
   document.getElementById("toTop").hidden = b.bottom > 0;
 }, { passive: true });
 let hlKey = null;
@@ -1570,6 +1680,7 @@ function parseCommon(wb) {
   const settings = {};
   if (wb.Sheets["設定"]) XLSX.utils.sheet_to_json(wb.Sheets["設定"], { header: 1, raw: true, defval: "" }).slice(1).forEach(row => {
     const k = txt(row[0]).replace(/\s/g, ""), v = toIsoDate(row[1]);
+    if (k === "我的流程名稱") { settings.myTitle = txt(row[1]); return; }
     if (k === "顯示我的流程") { settings.showMy = /^是|^yes|^true|^1$/i.test(txt(row[1])) ? "yes" : "no"; return; }
     if (k === "3款風格是否等待主視覺") { settings.cisWait = /需等待|^是|^yes/i.test(txt(row[1])) && !/不/.test(txt(row[1])) ? "yes" : "no"; return; }
     if (!v) return;
@@ -1608,6 +1719,7 @@ function applyData(data, meta) {
   if (data.settings.anniv) DEF.anniv = data.settings.anniv;
   MYFLOW = data.myflow || null;
   MY_ON = !!(data.settings && data.settings.showMy === "yes");
+  MY_TITLE = (data.settings && data.settings.myTitle) || "";
 }
 function showSource(err) {
   const el = document.getElementById("srcText");
@@ -1638,7 +1750,7 @@ function loadFile(file) {
   fr.readAsArrayBuffer(file);
 }
 function useBuiltin() {
-  MYFLOW = null; MY_ON = false;
+  MYFLOW = null; MY_ON = false; MY_TITLE = "";
   STEPS = VERSIONS[st.ver].steps; HOLIDAYS = BUILTIN.holidays; HOL = new Map(HOLIDAYS); XL = null; DEF.anniv = "2028-06-09";
   try { localStorage.removeItem(XKEY); } catch (e) {}
   st.s = st.sv[st.ver] = st.sv[st.ver] || {}; save(); render(); showSource();
@@ -1719,7 +1831,7 @@ const SUB_TEXT = document.querySelector("header .sub").textContent;
 /* 從試算表切回內建版本 */
 function leaveSheet() {
   if (SHEET_MODE) { st.g = Object.assign({}, st.g, G_LOCAL || {}); G_LOCAL = null; }
-  SHEET_MODE = false; XL = null; CHG = {}; CHGLOG = []; SHEET_TABS = []; BAD_TABS = []; MYFLOW = null; MY_ON = false;
+  SHEET_MODE = false; XL = null; CHG = {}; CHGLOG = []; SHEET_TABS = []; BAD_TABS = []; MYFLOW = null; MY_ON = false; MY_TITLE = "";
   HOLIDAYS = BUILTIN.holidays; HOL = new Map(HOLIDAYS); DEF.anniv = "2028-06-09";
   try { localStorage.removeItem(XKEY); } catch (e) {}
   document.body.classList.remove("sheet-mode", "sheet-wait", "sheet-fail");
@@ -2032,11 +2144,12 @@ async function buildXlsx() {
     ["3款風格是否等待主視覺", r.cisWait ? "需等待" : "不需等待", "選「需等待」：整個第一階段（啟動會議、3 款風格、工作計畫書）要等主視覺完成後才開始", true],
     ["主視覺提供日", st.g.cisProvide ? serial(D(st.g.cisProvide)) : { formula: "B4", result: serial(r.cisFinal) }, "主視覺完成、提供給網站廠商的日期；預設＝CIS 定稿日（B4）", true],
     ["顯示我的流程", MY_ON ? "是" : "否", "填「是」才會在網頁顯示第 ③ 軌「我的流程」與它的表格（內容在「我的流程」分頁）", true],
+    ["我的流程名稱", MY_TITLE || "我的流程", "第 ③ 軌在網頁上顯示的名稱，可以自己改（例如「公關室作業」）", true],
   ];
   SET.forEach(([k, v, note, ed], i) => {
     const row = wt.getRow(i + 2);
     row.getCell(1).value = k; row.getCell(2).value = v; row.getCell(3).value = note;
-    paint(row.getCell(1), false); paint(row.getCell(2), ed, (i === 6 || i === 8 || i === 10) ? null : "yyyy/mm/dd"); paint(row.getCell(3), false);
+    paint(row.getCell(1), false); paint(row.getCell(2), ed, (i === 6 || i === 8 || i === 10 || i === 11) ? null : "yyyy/mm/dd"); paint(row.getCell(3), false);
   });
   wt.dataValidations.add("B10", { type: "list", allowBlank: false, formulae: ['"不需等待,需等待"'] });
   wt.dataValidations.add("B12", { type: "list", allowBlank: false, formulae: ['"是,否"'] });
