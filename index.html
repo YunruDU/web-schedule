@@ -275,7 +275,7 @@
         <option value="3">3 倍</option>
       </select>
     </label>
-    <label class="field" for="g-subs">同時進行的細項
+    <label class="field" for="g-subs">細項（招標分軌）
       <select id="g-subs">
         <option value="off">收合</option>
         <option value="on">展開</option>
@@ -615,6 +615,7 @@ const add = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); retur
 const isWork = d => d.getDay() % 6 !== 0 && !HOL.has(iso(d));
 const nextWork = d => { let x = new Date(d); while (!isWork(x)) x = add(x, 1); return x; };
 const roc = d => (d.getFullYear() - 1911) + "/" + (d.getMonth() + 1) + "/" + d.getDate();
+const rng = (s, e) => iso(s) === iso(e) ? roc(s) : roc(s) + "–" + (s.getFullYear() === e.getFullYear() ? (e.getMonth() + 1) + "/" + e.getDate() : roc(e));
 const rocW = d => roc(d) + "（" + "日一二三四五六"[d.getDay()] + "）";
 const diff = (a, b) => Math.round((b - a) / 86400000);
 /* skipFirst：始日不算入（等標期自公告日次日起算） */
@@ -715,12 +716,16 @@ function draw(r) {
   /* 圖寬：時間軸拉長、字的大小不變，所以前段不會擠在一起；超出畫面時可左右捲動或拖曳 */
   const zoom = Math.max(1, parseFloat(st.g.zoom) || 1), W = Math.round(1240 * zoom);
   R = W - 20;
-  const my = SHOW_PREP ? [] : myItems(r), SHOW3 = SHOW_PREP || my.length > 0;
-  const VH = SHOW3 ? 760 : 545;
+  const my = SHOW_PREP || !MY_ON ? [] : myItems(r), SHOW3 = SHOW_PREP || my.length > 0;
+  const expand = st.g.subs === "on";
+  const tSteps = expand ? STEPS.filter(x => !x.sec && x.tender && r[x.id] && !r[x.id].skipped && r[x.id].s < V1) : [];
+  const LANE = 17, extra = tSteps.length ? tSteps.length * LANE + 30 : 0;   /* 展開後多出來的高度 */
+  const myL = myLanes(my), ROW3 = 18, extra3 = Math.max(0, myL.height - 118);   /* ③ 支線排不下就把圖拉高 */
+  const VH = (SHOW3 ? 760 : 545) + extra + extra3;
   svg.setAttribute("viewBox", "0 0 " + W + " " + VH);
   svg.style.width = (zoom * 100) + "%";
   svg.style.minWidth = (68 * zoom) + "rem";
-  const Y = 255, YC = 430, Y3 = 630, AX = SHOW3 ? 712 : 500;
+  const Y = 255, YC = 430 + extra, Y3 = 630 + extra, AX = (SHOW3 ? 712 : 500) + extra + extra3;
   const g = (cls) => { const e = sv("g", cls ? { class: cls } : {}); svg.append(e); return e; };
   const bands = g(), grid = g(), lines = g(), boxes = g(), marks = g(), labels = g();
 
@@ -747,7 +752,6 @@ function draw(r) {
   lines.append(sv("path", { d: `M${R - 10} ${Y - 5} L${R} ${Y} L${R - 10} ${Y + 5}`, fill: "none", stroke: "var(--blue)", "stroke-width": 1.6 }));
 
   /* 拉線標註：每個項目拉一條線到上方，寫「名稱 起–迄」，自動分層避免重疊 */
-  const rng = (s, e) => iso(s) === iso(e) ? roc(s) : roc(s) + "–" + (s.getFullYear() === e.getFullYear() ? (e.getMonth() + 1) + "/" + e.getDate() : roc(e));
   const makeCallouts = (baseY, gap) => {
     const placed = [], todo = [];
     return {
@@ -784,6 +788,20 @@ function draw(r) {
     const t = "招標 " + months + " 個月";
     if (tw(t) < x1 - x0 - 6) boxes.append(sv("text", { x: (x0 + x1) / 2, y: Y + 4, "text-anchor": "middle", "font-size": 11, fill: "var(--teal)" }, t));
     co.add(x0 + 10, Y - 10, "招標（含一評、二評） " + rng(r.t1a.s, r.t6.e), "var(--amber)", 400, "sec-tender");
+    /* 展開：每個招標細項一軌（像剪輯軟體的音軌），範圍框住、底色交錯 */
+    if (tSteps.length) {
+      const top = Y + 66, bot = top + tSteps.length * LANE;
+      lines.append(sv("path", { d: `M${x0} ${Y + 11} L${x0} ${bot + 4} M${x1} ${Y + 11} L${x1} ${bot + 4}`, fill: "none", stroke: "var(--amber)", "stroke-width": 1, "stroke-dasharray": "3 3", opacity: .7 }));
+      tSteps.forEach((x, i) => {
+        const q = r[x.id], y = top + i * LANE, a = X(q.s), b = Math.max(X(add(q.e, 1)), a + 3);
+        if (i % 2 === 0) bands.append(sv("rect", { x: x0, y: y - 2, width: x1 - x0, height: LANE, fill: "var(--teal-bg)", opacity: .45 }));
+        const go = "row-" + x.id, lab = (x.short || x.name.replace(/[：・（].*$/, "")) + " " + (x.ms ? roc(q.s) : rng(q.s, q.e));
+        if (x.ms) marks.append(sv("path", { d: `M${a} ${y + 1} L${a + 6} ${y + 7} L${a} ${y + 13} L${a - 6} ${y + 7} Z`, fill: "var(--teal)", "data-go": go }));
+        else boxes.append(sv("rect", { x: a, y: y + 2, width: b - a, height: 10, rx: 2, fill: "var(--teal-bg)", stroke: x.src === "ai" ? "var(--amber)" : "var(--teal)", "stroke-width": 1.1,
+          "stroke-dasharray": x.src === "ai" ? "3 2" : "none", "data-go": go, tabindex: 0, role: "button", "aria-label": x.name + "：跳到表格" }));
+        labels.append(sv("text", { x: (x.ms ? a + 9 : b + 5), y: y + 11, "font-size": 11, fill: x.src === "ai" ? "var(--amber)" : "var(--teal)", "data-go": go }, lab));
+      });
+    }
   }
   STEPS.forEach((x, i) => {
     if (x.sec) return;
@@ -926,20 +944,21 @@ function draw(r) {
   pco.draw();
   }
 
-  /* ③ 我的流程 */
+  /* ③ 我的流程：每條支線一軌（像音軌），同一支線裡重疊的事往下排；名稱寫在色塊旁邊 */
   if (my.length) {
     labels.append(sv("text", { x: L, y: Y3 - 76, "font-size": 17, "font-weight": 700, fill: "var(--teal)" }, "③ 我的流程"));
-    lines.append(sv("line", { x1: L, x2: R - 4, y1: Y3, y2: Y3, stroke: "var(--teal)", "stroke-width": 1.2, opacity: .7 }));
-    const mco = makeCallouts(Y3 - 20, 17), rowEnd = [];
-    my.forEach(x => {
-      if (x.s > V1 || x.e < V0) return;
-      const a = X(x.s), b = Math.max(X(add(x.e, 1)), a + 3);
-      let k = rowEnd.findIndex(v => v < a); if (k < 0) { k = rowEnd.length; rowEnd.push(0); } rowEnd[k] = b + 4;
-      boxes.append(sv("rect", { x: a, y: Y3 + 6 + k * 14, width: b - a, height: 10, rx: 2, "data-go": "my-" + x.k, tabindex: 0, role: "button", "aria-label": x.name + "：跳到我的流程",
-        fill: "var(--teal-bg)", stroke: x.missing ? "var(--red)" : "var(--teal)", "stroke-width": 1.2 }));
-      mco.add((a + b) / 2, Y3, x.name + " " + rng(x.s, x.e), "var(--teal)", 400, "my-" + x.k);
+    const top = Y3 - 52;
+    myL.lanes.forEach((ln, li) => {
+      const y0 = top + ln.y, h = ln.rows.length * ROW3;
+      if (li % 2 === 0) bands.append(sv("rect", { x: L, y: y0 - 3, width: R - L, height: h + 2, fill: "var(--teal-bg)", opacity: .45 }));
+      if (ln.name) labels.append(sv("text", { x: L + 4, y: y0 + 10, "font-size": 11, "font-weight": 700, fill: "var(--teal)" }, ln.title));
+      ln.rows.forEach((row, k) => row.forEach(x => {
+        const y = y0 + k * ROW3, a = X(x.s), b = Math.max(X(add(x.e, 1)), a + 3), go = "my-" + x.k;
+        boxes.append(sv("rect", { x: a, y: y + 1, width: b - a, height: 11, rx: 2, "data-go": go, tabindex: 0, role: "button", "aria-label": x.name + "：跳到我的流程",
+          fill: "var(--teal-bg)", stroke: x.missing ? "var(--red)" : "var(--teal)", "stroke-width": 1.2 }));
+        labels.append(sv("text", x.labLeft ? { x: a - 5, y: y + 10, "font-size": 11, fill: "var(--teal)", "text-anchor": "end", "data-go": go } : { x: b + 5, y: y + 10, "font-size": 11, fill: "var(--teal)", "data-go": go }, x.lab));
+      }));
     });
-    mco.draw();
   }
 
   /* 今天 */
@@ -1153,27 +1172,46 @@ function renderPrep(r) {
   });
   document.getElementById("prepTable").innerHTML = h + '</tbody>';
 }
-/* ============ ③ 我的流程：自己的工作，對齊上面的時程自動算日期 ============
-   資料來源：共編試算表「我的流程」分頁；沒有這個分頁（或單機版）就用下面的預設項目。
-   對齊方式：之前完成＝在那一步開始前完成；結束前完成＝在那一步結束前完成；
-             同時開始＝跟那一步同一天開始；之後開始＝那一步結束後開始。
-   沒填「對齊步驟ID」＝接在我的上一項之後；有填指定起日／迄日就用指定的日期。天數都是日曆天。 */
-const MY_DEFAULT = [
-  { name: "確認主機規格與分工（與資服處）", days: 14, anchor: "e1", mode: "之前完成", gap: 0, note: "需求書第七章要填主機規格、作業系統、前後台是否分開" },
-  { name: "資通系統列冊、確認防護等級", days: 10, anchor: "t3", mode: "之前完成", gap: 0, note: "招標時要載明防護等級" },
-  { name: "網域名稱簽核（公文到一層）", days: 28, anchor: "a1", mode: "之前完成", gap: 0, note: "測試區上線時就需要網址" },
-  { name: "測試區主機、VPN 帳號", days: 14, anchor: "a1", mode: "之前完成", gap: 0, note: "第二階段一開始廠商就要部署" },
-  { name: "正式區主機、SSL 憑證、CDN／WAF", days: 10, anchor: "s3", mode: "同時開始", gap: 0, note: "上線前還要做弱掃與壓力測試" },
-  { name: "弱掃與壓力測試白名單", days: 7, anchor: "s3", mode: "同時開始", gap: 14, note: "不然掃描會被 WAF 擋下" },
-  { name: "上線驗收：資安與效能報告審查", days: 14, anchor: "a3", mode: "同時開始", gap: 0, note: "白箱、黑箱、壓力測試、無障礙報告" },
-  { name: "典藏版存放主機與網址", days: 30, anchor: "s4", mode: "結束前完成", gap: 30, note: "系列活動結束後網站轉靜態網頁" },
-];
-let MYFLOW = null;   /* 試算表「我的流程」分頁的內容；null＝用預設 */
+/* ============ ③ 我的流程：自己的工作，直接填開始日、結束日 ============
+   資料來源：共編試算表「我的流程」分頁（項目｜開始日｜結束日｜備註）；沒有這個分頁就不畫第 ③ 軌。
+   只填開始日或只填結束日＝一天；兩個都沒填＝不畫，表格提醒要填日期。
+   （進階：舊的「對齊步驟ID／對齊方式／間隔天數」欄位如果還在，照樣支援。） */
+const MY_DEFAULT = [];   /* 沒有預設項目：要等使用者在試算表「我的流程」分頁填自己的流程 */
+let MYFLOW = null;   /* 試算表「我的流程」分頁的內容；null＝還沒有 */
+let MY_ON = false;   /* 試算表「設定」的「顯示我的流程」填「是」才顯示（預設不顯示，方便先上架不 demo） */
+/* 把「我的流程」依「支線」分組，每組裡互相重疊的再往下排一列；回傳每條支線的位置與總高度 */
+function myLanes(my) {
+  const ROW = 18, GAP = 6, tw = t => [...t].reduce((w, c) => w + (c.charCodeAt(0) > 255 ? 11 : 6.2), 0);
+  const lanes = [], byKey = {};
+  my.forEach(x => {
+    if (x.nodate || x.s > V1 || x.e < V0) return;
+    const key = x.lane || "";
+    if (!byKey[key]) { byKey[key] = { name: key, title: /^\d+$/.test(key) ? "③-" + key : key, items: [] }; lanes.push(byKey[key]); }
+    byKey[key].items.push(x);
+  });
+  let y = 0;
+  lanes.forEach(ln => {
+    const pad = ln.name ? tw(ln.title) + 14 : 0;   /* 左邊留位置寫支線名稱 */
+    ln.rows = []; const ends = [];
+    ln.items.sort((p, q) => p.s - q.s).forEach(x => {
+      const a = X(x.s), b = Math.max(X(add(x.e, 1)), a + 3);
+      x.lab = x.name + " " + (diff(x.s, x.e) ? rng(x.s, x.e) : roc(x.s));
+      const w = tw(x.lab) + 10;
+      x.labLeft = b + w > R && a - w > L + pad;   /* 右邊放不下就寫在左邊 */
+      const from = x.labLeft ? a - w : a, to = x.labLeft ? b : b + w;
+      let k = ends.findIndex((v, i) => v < from && (i > 0 || from > L + pad || !ln.name));
+      if (k < 0) { k = ends.length; ends.push(0); ln.rows.push([]); }
+      ends[k] = to + 4; ln.rows[k].push(x);
+    });
+    ln.y = y; y += ln.rows.length * ROW + GAP;
+  });
+  return { lanes, height: Math.max(0, y - GAP) };
+}
 function myItems(r) {
   const out = [];
   (MYFLOW || MY_DEFAULT).filter(x => x && x.name && x.show !== false).forEach((x, i) => {
     const n = Math.max(1, parseInt(x.days, 10) || 1), g = parseInt(x.gap, 10) || 0;
-    const a = x.anchor ? r[x.anchor] : null, prev = out[out.length - 1];
+    const a = x.anchor ? r[x.anchor] : null, prev = out.filter(o => !o.nodate).pop();
     let s = x.start ? D(x.start) : null, e = x.end ? D(x.end) : null;
     if (!s && !e) {
       const m = String(x.mode || "");
@@ -1181,11 +1219,12 @@ function myItems(r) {
       else if (a && /結束前/.test(m)) e = add(a.e, -g);
       else if (a && /同時/.test(m)) s = add(a.s, g);
       else if (a) s = add(a.e, 1 + g);
-      else if (prev) s = add(prev.e, 1 + g);
-      else s = D(TODAY);
+      else if (x.anchor || x.mode) s = prev ? add(prev.e, 1 + g) : D(TODAY);
     }
+    if (!s && !e) { out.push(Object.assign({}, x, { s: null, e: null, k: i, nodate: true })); return; }
     if (s && !e) e = add(s, n - 1);
     if (e && !s) s = add(e, -(n - 1));
+    if (e < s) { const t = s; s = e; e = t; }
     const step = x.anchor ? STEPS.find(z => !z.sec && z.id === x.anchor) : null;
     out.push(Object.assign({}, x, { s, e, k: i, missing: !!(x.anchor && !a),
       anchorName: step ? step.name.replace(/^第.階段：/, "") : (x.anchor || "") }));
@@ -1194,17 +1233,23 @@ function myItems(r) {
 }
 function renderMy(r) {
   const my = myItems(r), sec = document.getElementById("mySection");
-  sec.hidden = !my.length;
-  if (!my.length) return;
-  document.getElementById("myHint").textContent = (SHEET_MODE && MYFLOW
-    ? "來自共編試算表「我的流程」分頁；改那裡，網頁重新整理就會更新。"
-    : "目前是預設項目。要改成自己的流程：在共編試算表加一個「我的流程」分頁（格式同「匯出 Excel」裡的「我的流程」）。") +
-    "日期會跟著上面的時程自動算：對齊某一步，那一步延後，這裡也跟著延後。";
-  let h = '<thead><tr><th>#</th><th>我要做的事</th><th>起</th><th>迄</th><th>天數</th><th>對齊</th><th>備註</th></tr></thead><tbody>';
+  sec.hidden = !MY_ON;
+  if (!MY_ON) return;
+  const tbl = document.getElementById("myTable");
+  if (!my.length) {
+    document.getElementById("myHint").textContent = "還沒有你的流程。到共編 Google 試算表新增一個分頁，名稱取「我的流程」，第一列標題依序是：支線｜項目｜開始日｜結束日｜備註。每一列是一件你要做的事；網頁重新整理後，圖上會多一軌「③ 我的流程」。";
+    tbl.innerHTML = "";
+    return;
+  }
+  document.getElementById("myHint").textContent = "來自共編試算表「我的流程」分頁；要修改請到那個分頁改開始日、結束日，網頁重新整理就會更新。";
+  const adv = my.some(x => x.anchor || x.mode);   /* 有用到舊的「對齊」欄位才顯示那一欄 */
+  const hasLane = my.some(x => x.lane);
+  let h = '<thead><tr><th>#</th>' + (hasLane ? '<th>支線</th>' : '') + '<th>我要做的事</th><th>開始</th><th>結束</th><th>天數</th>' + (adv ? '<th>對齊</th>' : '') + '<th>備註</th></tr></thead><tbody>';
   my.forEach((x, i) => {
     const how = x.start || x.end ? "指定日期" : x.anchor ? "「" + x.anchorName + "」" + (x.mode || "之後開始") + (x.gap ? "（間隔 " + x.gap + " 天）" : "") : "接在上一項之後";
-    h += '<tr id="my-' + x.k + '"><td>' + (i + 1) + '</td><td>' + esc3(x.name) + '</td><td class="dt">' + rocW(x.s) + '</td><td class="dt">' + rocW(x.e) + '</td><td>' + (diff(x.s, x.e) + 1) + '</td>' +
-      '<td' + (x.missing ? ' class="warn"' : '') + '>' + (x.missing ? "找不到步驟 ID「" + esc3(x.anchor) + "」" : how) + '</td><td class="why">' + esc3(x.note || "") + '</td></tr>';
+    h += '<tr id="my-' + x.k + '"><td>' + (i + 1) + '</td>' + (hasLane ? '<td>' + esc3(x.lane || "") + '</td>' : '') + '<td>' + esc3(x.name) + '</td>' +
+      (x.nodate ? '<td class="warn" colspan="3">還沒填開始日／結束日</td>' : '<td class="dt">' + rocW(x.s) + '</td><td class="dt">' + rocW(x.e) + '</td><td>' + (diff(x.s, x.e) + 1) + '</td>') +
+      (adv ? '<td' + (x.missing ? ' class="warn"' : '') + '>' + (x.missing ? "找不到步驟 ID「" + esc3(x.anchor) + "」" : how) + '</td>' : '') + '<td class="why">' + esc3(x.note || "") + '</td></tr>';
   });
   document.getElementById("myTable").innerHTML = h + '</tbody>';
 }
@@ -1272,7 +1317,7 @@ function notes(r) {
 /* ============ 整體 ============ */
 function render() {
   const r = compute();
-  document.getElementById("g-subs").closest("label").hidden = !STEPS.some(x => x.parts);   /* 只有 10/07 v2 版有「同時進行的細項」 */
+  document.getElementById("g-subs").closest("label").hidden = !STEPS.some(x => !x.sec && (x.parts || x.tender));
   ["view", "target", "cisAward", "cisBasic", "cisFinal", "zoom", "subs"].forEach(k => { document.getElementById("g-" + k).value = st.g[k]; });
   document.getElementById("w-no").checked = !r.cisWait;
   document.getElementById("w-yes").checked = r.cisWait;
@@ -1525,6 +1570,7 @@ function parseCommon(wb) {
   const settings = {};
   if (wb.Sheets["設定"]) XLSX.utils.sheet_to_json(wb.Sheets["設定"], { header: 1, raw: true, defval: "" }).slice(1).forEach(row => {
     const k = txt(row[0]).replace(/\s/g, ""), v = toIsoDate(row[1]);
+    if (k === "顯示我的流程") { settings.showMy = /^是|^yes|^true|^1$/i.test(txt(row[1])) ? "yes" : "no"; return; }
     if (k === "3款風格是否等待主視覺") { settings.cisWait = /需等待|^是|^yes/i.test(txt(row[1])) && !/不/.test(txt(row[1])) ? "yes" : "no"; return; }
     if (!v) return;
     if (k === "目標上線日") settings.target = v;
@@ -1543,11 +1589,12 @@ function parseCommon(wb) {
   let myflow = null;   /* 「我的流程」分頁（選用） */
   if (wb.Sheets["我的流程"]) {
     const rows = XLSX.utils.sheet_to_json(wb.Sheets["我的流程"], { header: 1, raw: true, defval: "" });
-    const hdr = (rows[0] || []).map(txt), c = n => hdr.indexOf(n);
+    const hdr = (rows[0] || []).map(x => txt(x).replace(/\s/g, "")), c = (...ns) => { for (const n of ns) { const k = hdr.indexOf(n); if (k >= 0) return k; } return -1; };
     if (c("項目") >= 0) {
-      const g = (row, n) => c(n) < 0 ? "" : row[c(n)];
-      myflow = rows.slice(1).map(row => ({ name: txt(g(row, "項目")), days: g(row, "天數"), anchor: txt(g(row, "對齊步驟ID")), mode: txt(g(row, "對齊方式")),
-        gap: g(row, "間隔天數"), start: toIsoDate(g(row, "指定起日")), end: toIsoDate(g(row, "指定迄日")), note: txt(g(row, "備註")), show: txt(g(row, "是否顯示")) !== "否" }))
+      const g = (row, ...ns) => c(...ns) < 0 ? "" : row[c(...ns)];
+      myflow = rows.slice(1).map(row => ({ lane: txt(g(row, "支線", "分線", "軌道")), name: txt(g(row, "項目")), days: g(row, "天數"), anchor: txt(g(row, "對齊步驟ID")), mode: txt(g(row, "對齊方式")),
+        gap: g(row, "間隔天數"), start: toIsoDate(g(row, "開始日", "開始", "起日", "指定起日")), end: toIsoDate(g(row, "結束日", "結束", "迄日", "指定迄日")), note: txt(g(row, "備註")), show: txt(g(row, "是否顯示")) !== "否" }))
+        .map(x => (!x.lane && /^\d+$/.test(x.name) && x.note) ? Object.assign(x, { lane: x.name, name: x.note, note: "" }) : x)
         .filter(x => x.name);
     }
   }
@@ -1560,6 +1607,7 @@ function applyData(data, meta) {
   XL = Object.assign({ settings: data.settings }, meta);
   if (data.settings.anniv) DEF.anniv = data.settings.anniv;
   MYFLOW = data.myflow || null;
+  MY_ON = !!(data.settings && data.settings.showMy === "yes");
 }
 function showSource(err) {
   const el = document.getElementById("srcText");
@@ -1590,7 +1638,7 @@ function loadFile(file) {
   fr.readAsArrayBuffer(file);
 }
 function useBuiltin() {
-  MYFLOW = null;
+  MYFLOW = null; MY_ON = false;
   STEPS = VERSIONS[st.ver].steps; HOLIDAYS = BUILTIN.holidays; HOL = new Map(HOLIDAYS); XL = null; DEF.anniv = "2028-06-09";
   try { localStorage.removeItem(XKEY); } catch (e) {}
   st.s = st.sv[st.ver] = st.sv[st.ver] || {}; save(); render(); showSource();
@@ -1671,7 +1719,7 @@ const SUB_TEXT = document.querySelector("header .sub").textContent;
 /* 從試算表切回內建版本 */
 function leaveSheet() {
   if (SHEET_MODE) { st.g = Object.assign({}, st.g, G_LOCAL || {}); G_LOCAL = null; }
-  SHEET_MODE = false; XL = null; CHG = {}; CHGLOG = []; SHEET_TABS = []; BAD_TABS = []; MYFLOW = null;
+  SHEET_MODE = false; XL = null; CHG = {}; CHGLOG = []; SHEET_TABS = []; BAD_TABS = []; MYFLOW = null; MY_ON = false;
   HOLIDAYS = BUILTIN.holidays; HOL = new Map(HOLIDAYS); DEF.anniv = "2028-06-09";
   try { localStorage.removeItem(XKEY); } catch (e) {}
   document.body.classList.remove("sheet-mode", "sheet-wait", "sheet-fail");
@@ -1944,26 +1992,20 @@ async function buildXlsx() {
   ws.dataValidations.add(`S2:S${end}`, { type: "list", allowBlank: true, formulae: ['"需求書,本院設定,估計"'] });
   }
 
-  /* 我的流程（選用）：自己的工作項目，對齊時程的某一步自動算日期 */
+  /* 我的流程（選用）：自己的工作項目，直接填開始日、結束日 */
   const wm = wb.addWorksheet("我的流程", { views: [{ state: "frozen", ySplit: 1 }] });
-  head(wm, [["項目", 34], ["天數", 7], ["對齊步驟ID", 11], ["對齊方式", 11], ["間隔天數", 9], ["指定起日", 12], ["指定迄日", 12], ["備註", 40], ["是否顯示", 9], ["起（網頁算）", 15], ["迄（網頁算）", 15]]);
-  const myNow = (() => { const keepS = st.s; return myItems(r); })();
-  (MYFLOW || MY_DEFAULT).forEach((x, i) => {
-    const row = wm.getRow(i + 2), it = myNow.find(m => m.name === x.name);
-    [x.name, parseInt(x.days, 10) || null, x.anchor || null, x.mode || null, parseInt(x.gap, 10) || null, x.start ? serial(D(x.start)) : null, x.end ? serial(D(x.end)) : null, x.note || null, x.show === false ? "否" : "是",
-     it ? rocW(it.s) : null, it ? rocW(it.e) : null].forEach((v, j) => { const c = row.getCell(j + 1); c.value = v; paint(c, j < 9, j === 5 || j === 6 ? "yyyy/mm/dd" : null); });
+  head(wm, [["支線", 8], ["項目", 34], ["開始日", 13], ["結束日", 13], ["備註", 40]]);
+  myItems(r).forEach((x, i) => {
+    const row = wm.getRow(i + 2);
+    [x.lane || null, x.name, x.s ? serial(x.s) : null, x.e ? serial(x.e) : null, x.note || null].forEach((v, j) => { const c = row.getCell(j + 1); c.value = v; paint(c, true, j === 2 || j === 3 ? "yyyy/mm/dd" : null); });
   });
-  wm.dataValidations.add("D2:D60", { type: "list", allowBlank: true, formulae: ['"之前完成,結束前完成,同時開始,之後開始"'] });
-  wm.dataValidations.add("I2:I60", { type: "list", allowBlank: true, formulae: ['"是,否"'] });
-  wm.getCell("M1").value = "說明"; wm.getCell("M1").font = { name: "Microsoft JhengHei", bold: true }; wm.getColumn(13).width = 80;
+  wm.getCell("G1").value = "說明"; wm.getCell("G1").font = { name: "Microsoft JhengHei", bold: true }; wm.getColumn(7).width = 70;
   [
     "這一頁是「我的流程」：網頁時程圖的第 ③ 軌。每一列是一件自己要做的事。",
-    "對齊步驟ID：填共編版裡步驟的 ID（例如 e1＝一評、t3＝上網公告、t6＝決標、a1＝第一階段驗收、s3＝第二階段上線、a3＝第二階段驗收、s4＝第三階段）。",
-    "對齊方式：之前完成＝在那一步開始前完成；結束前完成＝在那一步結束前完成；同時開始＝跟那一步同一天開始；之後開始＝那一步結束後開始。",
-    "間隔天數：跟那一步之間隔幾天（之前完成＝提早幾天完成；同時開始＝晚幾天開始）。天數都是日曆天。",
-    "對齊步驟ID 空白＝接在上一項之後。要固定日期就填指定起日／指定迄日。",
-    "那一步延後，這裡的日期也會跟著延後；「起／迄（網頁算）」是匯出當下的結果，只是參考，不用改。",
-  ].forEach((t, i) => { wm.getCell(i + 2, 13).value = t; wm.getCell(i + 2, 13).font = { name: "Microsoft JhengHei", size: 10 }; });
+    "填項目、開始日、結束日就好（例如 2026/11/10）。只有一天的事，結束日可以空白。",
+    "支線：填 1、2、3（或文字，例如「採購」「內容」），同一支線畫在同一軌；空白＝都畫在同一軌。",
+    "要讓網頁顯示這一軌，「設定」分頁的「顯示我的流程」要選「是」。",
+  ].forEach((t, i) => { wm.getCell(i + 2, 7).value = t; wm.getCell(i + 2, 7).font = { name: "Microsoft JhengHei", size: 10 }; });
 
   /* 假日 */
   const wh = wb.addWorksheet("假日");
@@ -1989,13 +2031,15 @@ async function buildXlsx() {
     ["決標日", { formula: `INDEX(${T0}$N$2:$N$300,MATCH("${awardId}",${T0}$A$2:$A$300,0))`, result: serial(r.award) }, "「" + tabs[0].tab + "」的決標日（自動）", false],
     ["3款風格是否等待主視覺", r.cisWait ? "需等待" : "不需等待", "選「需等待」：整個第一階段（啟動會議、3 款風格、工作計畫書）要等主視覺完成後才開始", true],
     ["主視覺提供日", st.g.cisProvide ? serial(D(st.g.cisProvide)) : { formula: "B4", result: serial(r.cisFinal) }, "主視覺完成、提供給網站廠商的日期；預設＝CIS 定稿日（B4）", true],
+    ["顯示我的流程", MY_ON ? "是" : "否", "填「是」才會在網頁顯示第 ③ 軌「我的流程」與它的表格（內容在「我的流程」分頁）", true],
   ];
   SET.forEach(([k, v, note, ed], i) => {
     const row = wt.getRow(i + 2);
     row.getCell(1).value = k; row.getCell(2).value = v; row.getCell(3).value = note;
-    paint(row.getCell(1), false); paint(row.getCell(2), ed, (i === 6 || i === 8) ? null : "yyyy/mm/dd"); paint(row.getCell(3), false);
+    paint(row.getCell(1), false); paint(row.getCell(2), ed, (i === 6 || i === 8 || i === 10) ? null : "yyyy/mm/dd"); paint(row.getCell(3), false);
   });
   wt.dataValidations.add("B10", { type: "list", allowBlank: false, formulae: ['"不需等待,需等待"'] });
+  wt.dataValidations.add("B12", { type: "list", allowBlank: false, formulae: ['"是,否"'] });
 
   /* 異動紀錄（由 Apps Script 自動新增） */
   const wl = wb.addWorksheet("異動紀錄");
