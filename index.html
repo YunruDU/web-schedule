@@ -1881,7 +1881,7 @@ function loadFile(file) {
   fr.readAsArrayBuffer(file);
 }
 function useBuiltin() {
-  MYFLOW = null; MY_ON = false; MY_TITLE = "";
+  MYFLOW = null; MY_ON = false; MY_TITLE = ""; applyMyCache();
   STEPS = VERSIONS[st.ver].steps; HOLIDAYS = BUILTIN.holidays; HOL = new Map(HOLIDAYS); XL = null; DEF.anniv = "2028-06-09";
   try { localStorage.removeItem(XKEY); } catch (e) {}
   st.s = st.sv[st.ver] = st.sv[st.ver] || {}; save(); render(); showSource();
@@ -1971,6 +1971,20 @@ function leaveSheet() {
   document.getElementById("pwdBox").hidden = true;
   document.querySelector("header .sub").textContent = SUB_TEXT;
   document.querySelectorAll('.chip input, .wait input, #g-target, #g-cisAward, #g-cisBasic, #g-cisFinal, #reset').forEach(el => { el.disabled = false; el.title = ""; });
+  applyMyCache();
+}
+/* 看內建版本時，「我的流程」也從共編試算表讀（「我的流程」分頁＋「設定」的顯示我的流程／我的流程名稱） */
+let MY_CACHE = null;
+function applyMyCache() { if (MY_CACHE && !SHEET_MODE) { MYFLOW = MY_CACHE.myflow; MY_ON = MY_CACHE.on; MY_TITLE = MY_CACHE.title; } }
+async function loadMyFlow() {
+  if (!SHEET_URL || typeof XLSX === "undefined") return;
+  try {
+    const u = sheetExportUrl(SHEET_URL), res = await fetch(u + (u.includes("?") ? "&" : "?") + "t=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) return;
+    const c = parseCommon(XLSX.read(new Uint8Array(await res.arrayBuffer()), { type: "array" }));
+    MY_CACHE = { myflow: c.myflow || null, on: !!(c.settings && c.settings.showMy === "yes"), title: (c.settings && c.settings.myTitle) || "" };
+    if (!SHEET_MODE && !XL) { applyMyCache(); await cisReady; render(); }
+  } catch (e) {}
 }
 function sheetExportUrl(u) {
   u = String(u || "").trim();
@@ -2019,7 +2033,7 @@ async function loadSheet(quiet) {
     document.body.classList.remove("sheet-wait"); document.body.classList.add("sheet-fail");
     sheetMsg('<b>目前讀不到共編試算表，時程先不顯示。</b><span>可能是網路問題，或試算表的共用／發布設定被關掉了。（' + (e.message || e) + '）</span>' +
       '<button class="btn" type="button" id="sheetRetry">重新讀取</button>' +
-      '<button class="btn" type="button" id="sheetToBuiltin">改看內建 115/10/31 上午版</button>', true);
+      '<button class="btn" type="button" id="sheetToBuiltin">改看內建 115/11/16 版</button>', true);
   }
 }
 /* 每一步、每個欄位：最早的「原本的值」與最新的「改成」 */
@@ -2320,5 +2334,5 @@ async function exportXlsx() {
 
 cisReady = loadCis();
 if (VIEW_SHEET) loadSheet();
-else cisReady.then(() => { render(); showSource(); });
+else { cisReady.then(() => { render(); showSource(); }); loadMyFlow(); }
 </script>
